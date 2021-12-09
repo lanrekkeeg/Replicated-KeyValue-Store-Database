@@ -78,6 +78,8 @@ class Broadcaster(multiprocessing.Process):
                 # is election started?
                   # isElection = True
                 # is election completed?
+                  # leaderID = data['message']['leaderID']
+                  # start ping module
                 # who 
             print("received message: %s"%data)
         
@@ -258,7 +260,7 @@ class ClientHandler(multiprocessing.Process):
         
     
         
-def ping():
+def ping(port):
     """
     Check for health
     1. store time called last time
@@ -266,9 +268,24 @@ def ping():
     3. if message rec then check last time
     4. else send election notification
     """
-    
-    pass
-
+    broad_cast_receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) # UDP
+    broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    broad_cast_sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    # Enable broadcasting mode
+    broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    broad_cast_receiver.bind(("", port))
+    #last_time = current time 
+    while True:
+        data, addr = broad_cast_receiver.recvfrom(1024)
+        # parse it
+        data = data.decode()
+        data = json.loads(data)
+        if data.get('ping') is not None:
+            #current_ping =  current ping time
+            pass
+        
 def broad_cast_health(id, broad_caster):
     """
     broadcast health if master
