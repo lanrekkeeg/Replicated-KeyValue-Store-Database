@@ -1,3 +1,4 @@
+import logging
 from conf import *
 import socket
 import json
@@ -38,4 +39,5 @@ class MulticastRec(object):
         self.sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(host))
         self.sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, 
                      socket.inet_aton(self.MCAST_GRP) + socket.inet_aton(host))
+        print("Multicast rec object is created...")
 

@@ -8,12 +8,12 @@ class Broadcaster(multiprocessing.Process):
         super(Broadcaster, self).__init__()
         
 class A(multiprocessing.Process):
-    def __init__(self, man, leaderID, leader):
+    def __init__(self, man, leaderID, leader, lst):
         super(A, self).__init__()
         self.groupview = man
         self.leaderID = leaderID
         self.leader = leader
-
+        self.lst = lst
         
     def run(self):
         print(self.groupview)
@@ -23,6 +23,11 @@ class A(multiprocessing.Process):
         self.leader.value = 1
         self.leaderID.value = 1022
         self.groupview['groupView'] = data
+        self.lst.append(23)
+        self.lst.pop()
+        self.lst.append({"check":123})
+        self.lst.append({"check":124})
+
         print(self.groupview)
 
 
@@ -49,8 +54,9 @@ if __name__ == '__main__':
     d = manager.dict()
     leaderID = manager.Value('i',123)
     leader = manager.Value('i',0)
+    lst = manager.list([])
     d["groupView"] = {"0":"1"}
-    a = A(d, leaderID, leader)
+    a = A(d, leaderID, leader,lst)
     a.start()
     a.join()
     '''
@@ -64,4 +70,5 @@ if __name__ == '__main__':
     print (d)
     print(leaderID.value)
     print(leader)
+    print(lst)
     
