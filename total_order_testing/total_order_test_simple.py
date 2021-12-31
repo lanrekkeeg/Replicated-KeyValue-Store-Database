@@ -18,7 +18,7 @@ def main():
         message = json.dumps(message)
         message = str.encode(message)    
         sock.sendto(message, (MCAST_GRP, MCAST_PORT))
-        sqn += 1
+        sqn = 1
         print("message is sent ...")
         time.sleep(0.2)
         

@@ -2,6 +2,8 @@ from tinydb import TinyDB, Query
 from tinydb import where
 import os
 
+global db_buckets
+
 def process_query(request):
     """
     it will process the requery
@@ -42,8 +44,9 @@ def load_all_buckets():
     filenames = drop_non_json(filenames)
     bucket_object = creating_bucket_object(filenames)
     #bucket_object['registry'].add({"name":"test","new":123})
-    print(bucket_object)
-
+    #print(bucket_object)
+    return bucket_object
+    
 def creating_bucket_object(filename):
     """
     load all bucket data in seperate objects
@@ -66,10 +69,10 @@ def update_by_id(db_obj,query):
     """
     update record base on ID
     """
-    ids = get_all_IDS()
-    if id in query["id"]:
+    ids = get_all_IDS(db_obj)
+    if query["id"] in ids:
         try:
-            record = db_obj.update(query['query'],doc_id=id)
+            record = db_obj.update(query['query'],doc_ids=[query["id"]])
             return "Record updated sucessfully"
         except Exception as exp:
             return "Failed to update record, error is "+str(exp)
@@ -86,33 +89,61 @@ def update_by_query():
     
     pass
     
-def delete_by_id(db_obj, id):
+def delete_by_id(db_obj, id_lst):
     """
     delete document by id
     """
     ids = get_all_IDS(db_obj)
-    if id in ids:
-        db_obj.remove(doc_ids=id)
-        message = "Record with ID:"+str(id)+" is deleted..."
-        return message
-    else:
-        message = "No Record found with ID:"+str(id)
-        return message
+    delted_id = []
+    non_deleted_id = []
+    for id in id_lst:
+        if id in ids:
+            db_obj.remove(doc_ids=[id])
+            #message = "Record with ID:"+str(id)+" is deleted..."
+            #return message
+            delted_id.append(id)
+        else:
+            non_deleted_id.append(id)
     
+    if len(non_deleted_id) !=0 and len(delted_id) == 0:
+        message =  "No Record found with ID:"+str(id_lst)
+        # all record deleted
+    elif len(non_deleted_id) ==0 and len(delted_id) !=0:
+        #message = "Record with ID:"+str(delted_id)+" is deleted..."
+        message = "Record with ID:"+str(delted_id)+" is deleted"
+        # half deleted and half not deleted
+    elif len(non_deleted_id) != 0 and len(delted_id) !=0:
+        message = "Record with ID:"+str(delted_id)+" is deleted and No Record found with ID:"+str(non_deleted_id)
+    
+    return message
+            
 def search_by_id(db_obj, id):
     """
     """
-    ids = get_all_IDS()
+    ids = get_all_IDS(db_obj)
     if id in ids:
         record = db_obj.get(doc_id=id)
         return record
     else:
         message = "No Record found with ID:"+str(id)
         return message
-        
+
+def add_record(db_obj,data):
+    """
+    add record in bucket
+    """
+    id = db_obj.insert(data)
+    return "Record added, ID is "+str(id)
 def search_by_query(db_obj, query):
     """
     """
     pass
-
-load_all_buckets()
+    
+# Testing 
+db_buckets = load_all_buckets()
+#bck = load_all_buckets()
+#qry = {"id":9,"query":{"status":"updated"}}
+#print(search_by_id(bck['db'],3))
+#print(delete_by_id(bck['db'],[3,20,34,45]))
+#print(update_by_id(bck['db'],qry))
+#print(add_record(bck['db'],{"test":1244}))

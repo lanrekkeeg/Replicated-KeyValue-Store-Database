@@ -1,6 +1,7 @@
 import file1 as var
 import multiprocessing
 from multiprocessing import Process, Manager
+from queue import Queue
 
 
 class Broadcaster(multiprocessing.Process):
@@ -8,12 +9,13 @@ class Broadcaster(multiprocessing.Process):
         super(Broadcaster, self).__init__()
         
 class A(multiprocessing.Process):
-    def __init__(self, man, leaderID, leader, lst):
+    def __init__(self, man, leaderID, leader, lst,lst2):
         super(A, self).__init__()
         self.groupview = man
         self.leaderID = leaderID
         self.leader = leader
         self.lst = lst
+        self.lst2 = lst2
         
     def run(self):
         print(self.groupview)
@@ -27,6 +29,9 @@ class A(multiprocessing.Process):
         self.lst.pop()
         self.lst.append({"check":123})
         self.lst.append({"check":124})
+        self.lst2['response_queu'].put({"key":1})
+        self.lst2['response_queu'].put({"key":2})
+        self.lst2['response_queu'].put({"key":3})
 
         print(self.groupview)
 
@@ -55,8 +60,9 @@ if __name__ == '__main__':
     leaderID = manager.Value('i',123)
     leader = manager.Value('i',0)
     lst = manager.list([])
+    lst2 = manager.dict({"response_queu":Queue(maxsize=0)})
     d["groupView"] = {"0":"1"}
-    a = A(d, leaderID, leader,lst)
+    a = A(d, leaderID, leader,lst, lst2)
     a.start()
     a.join()
     '''
@@ -71,4 +77,5 @@ if __name__ == '__main__':
     print(leaderID.value)
     print(leader)
     print(lst)
+    print(lst2['response_queu'])
     
