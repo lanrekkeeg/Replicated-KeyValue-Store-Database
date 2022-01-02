@@ -3,6 +3,7 @@ from tinydb import where
 import os
 
 global db_buckets
+global db_operation
 
 def process_query(request):
     """
@@ -46,6 +47,18 @@ def load_all_buckets():
     #bucket_object['registry'].add({"name":"test","new":123})
     #print(bucket_object)
     return bucket_object
+
+def load_disk_bucket():
+    """
+    loading disk bucket
+    """
+    filenames = get_bucket_name_in_db("database_oper_log")
+    filenames = drop_non_json(filenames)
+    bucket_object = creating_bucket_object(filenames)
+    #bucket_object['registry'].add({"name":"test","new":123})
+    #print(bucket_object)
+    return bucket_object
+    
     
 def creating_bucket_object(filename):
     """
@@ -141,6 +154,7 @@ def search_by_query(db_obj, query):
     
 # Testing 
 db_buckets = load_all_buckets()
+db_operation = load_disk_bucket()
 #bck = load_all_buckets()
 #qry = {"id":9,"query":{"status":"updated"}}
 #print(search_by_id(bck['db'],3))

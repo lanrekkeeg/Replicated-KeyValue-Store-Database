@@ -10,7 +10,17 @@ from multiprocessing import Manager
 import random
 import datetime
 from broad_multi_cast import MulticastSend,MulticastRec
-def get_sqn(loc, sqn):
+MCAST_GRP = '224.1.1.1'
+MCAST_PORT = 5007
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
+
+def get_sqn(loc, sqn,lock):
+    lock.acquire()
+    lo_sqn = sqn.value
+    sqn.value += 1
+    lock.release()
+    '''
     while loc.value:
         continue
     loc.value = 1
@@ -19,24 +29,32 @@ def get_sqn(loc, sqn):
     sqn.value += 1
     #print("releasing the lock")
     loc.value = 0
+    '''
     return lo_sqn
+def send_message(message,sqn, time_, client):
+    message = json.dumps(message)
+    message = str.encode(message)    
+    sock.sendto(message, (MCAST_GRP, MCAST_PORT))
+    print(client," sent message with sqn ",sqn, " and time is" ,time_)
+
     
-def client_1(sqn, loc):
+def client_1(sqn, loc,l):
     print("starting client 1")
-    MCAST_GRP = '224.1.1.1'
-    MCAST_PORT = 5007
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-    sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
-    while True:
-        sqn_ = get_sqn(loc, sqn)
-        time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-        message = {"id":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "read", "bucket_name":"testing","sqn_no":sqn_}}
-        message = json.dumps(message)
-        message = str.encode(message)    
-        sock.sendto(message, (MCAST_GRP, MCAST_PORT))
-        print("client1 sent message with sqn ",sqn_, " and time is" ,time_)
-        slp = random.uniform(0.1, 0.3)
-        time.sleep(slp)
+    
+    sqn_ = get_sqn(loc, sqn,l)
+    time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    message = {"id":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"8:00","type":"MS"}, "sqn_no":sqn_}}
+    send_message(message, sqn_, time_,"client1")
+    sqn_ = get_sqn(loc, sqn,l)
+    time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    message = {"id":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"9:00","type":"MS"}, "sqn_no":sqn_}}
+    send_message(message, sqn_, time_,"client1")
+    time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    sqn_ = get_sqn(loc, sqn,l)    
+    message = {"id":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"10:00","type":"MS"}, "sqn_no":sqn_}}
+    send_message(message, sqn_, time_,"client1")
+    #slp = random.uniform(0.1, 0.3)
+    #time.sleep(slp)
         
 def response():
     """
@@ -49,31 +67,33 @@ def response():
         message = json.loads(message)
         
         if message.get("oper",None) == "response":
-            print("Response received for ",message['id']," and response is ",message['message'])
+            print("Response received for ",message['id']," and response is \n",message['message'],"\n")
             
-def client_2(sqn, loc):
-    MCAST_GRP = '224.1.1.1'
-    MCAST_PORT = 5007
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-    sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
-    while True:
-        sqn_ = get_sqn(loc, sqn)
-        time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-        message = {"id":"clien_2","send_time":time_,"oper": "key-value", "message":{"oper-type": "write","bucket_name":"testing", "sqn_no":sqn_}}
-        message = json.dumps(message)
-        message = str.encode(message)    
-        sock.sendto(message, (MCAST_GRP, MCAST_PORT))
-        print("client2 sent message with sqn ",sqn_, " and time is" ,time_)
-        slp = random.uniform(0.1, 0.3)
-        time.sleep(slp)
+def client_2(sqn, loc,l):
+    print("Starting client 2")
+    sqn_ = get_sqn(loc, sqn,l)
+    time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    message = {"id":"clien_2","send_time": time_,"oper": "key-value", "message":{"oper-type": "searchbyID", "bucket_name":"db","content":[1], "sqn_no":sqn_}}
+    send_message(message, sqn_, time_,"client2")
+    sqn_ = get_sqn(loc, sqn,l)
+    time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    message = {"id":"clien_2","send_time": time_,"oper": "key-value", "message":{"oper-type": "deletebyID", "bucket_name":"db","content":[1], "sqn_no":sqn_}}
+    send_message(message, sqn_, time_,"client2")
+    time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    sqn_ = get_sqn(loc, sqn,l)    
+    message = {"id":"clien_2","send_time": time_,"oper": "key-value", "message":{"oper-type": "searchbyID", "bucket_name":"db","content":[1], "sqn_no":sqn_}}
+    send_message(message, sqn_, time_,"client2")
+    #slp = random.uniform(0.1, 0.3)
+    #time.sleep(slp)
         
 
 if __name__ == '__main__':
     manager = Manager()
     sqn = manager.Value('i',0)
     loc = manager.Value('i',0)
-    cl1 = multiprocessing.Process(target=client_1, args = (sqn, loc))
-    cl2 = multiprocessing.Process(target=client_2, args = (sqn, loc))
+    l = manager.Lock()
+    cl1 = multiprocessing.Process(target=client_1, args = (sqn, loc,l))
+    cl2 = multiprocessing.Process(target=client_2, args = (sqn, loc,l))
     resp = multiprocessing.Process(target=response)
     cl1.start()
     cl2.start()

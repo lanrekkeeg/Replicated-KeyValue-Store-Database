@@ -7,6 +7,8 @@ import sys
 from queue import Queue
 import time
 from database_Oper import *
+from tinydb import TinyDB, Query
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('replica-manager')
 import json
@@ -51,6 +53,7 @@ class Replica(multiprocessing.Process):
             message = json.loads(message)
             #logger.debug("Received request, adding into hold_back_queu...")
             if message['oper'] == "key-value":
+                logger.debug("Adding record in hold back queue")
                 # discard duplicates e.g curr_sqn = 12, upcoming is 11 then we need to discard it
                 self.hold_back_Queue.append(message)
                 self.deliver()
@@ -100,7 +103,7 @@ class Replica(multiprocessing.Process):
         if db_operation == "write":
             resp = add_record(db_buckets[db_bucket],db_content)
         elif db_operation == "deletebyID":
-            resp = delete_by_id(db_bucket[db_bucket], db_content)
+            resp = delete_by_id(db_buckets[db_bucket], db_content)
         elif db_operation == "searchbyID":
             resp = search_by_id(db_buckets[db_bucket],db_content)
             pass
@@ -119,13 +122,19 @@ class Replica(multiprocessing.Process):
         message['message'] = response
         message['oper'] = "response"
         self.response_queue.append(message)
+        self.write_to_disk(message)
         return
         # add data
         # delete data
         # get data
         
                 
-        
+    def write_to_disk(self, message):
+        """
+        write operation to disk
+        """
+        add_record(db_operation['operations'],message)
+        logger.debug("commiting disk operation to disk....")
     
     def check_response_queu(self):
         """

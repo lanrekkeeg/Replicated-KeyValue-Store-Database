@@ -24,6 +24,7 @@ class A(multiprocessing.Process):
         data.update({"3":"3"})
         self.leader.value = 1
         self.leaderID.value = 1022
+        print("Lock for leader is:",self.leaderID.get)
         self.groupview['groupView'] = data
         self.lst.append(23)
         self.lst.pop()
