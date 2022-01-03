@@ -7,6 +7,7 @@ import sys
 from queue import Queue
 import time
 from database_Oper import *
+import copy
 from tinydb import TinyDB, Query
 
 logging.basicConfig(level=logging.DEBUG)
@@ -31,8 +32,6 @@ class Replica(multiprocessing.Process):
             pass
             #self.var = db_buckets
             #self.db_object = load_all_buckets()
-            
-
         
     def run(self):
         if self.switch:
@@ -85,6 +84,7 @@ class Replica(multiprocessing.Process):
         perform key value operation over the underlying json store
         response {"success":1 or 0, "error":"if response is 0", "data":"db data"}
         """
+        original_message = copy.deepcopy(message)
         db_operation = message['message']['oper-type']
         db_bucket = message['message']['bucket_name']
         db_content = message['message']['content']
@@ -122,7 +122,7 @@ class Replica(multiprocessing.Process):
         message['message'] = response
         message['oper'] = "response"
         self.response_queue.append(message)
-        self.write_to_disk(message)
+        self.write_to_disk(original_message)
         return
         # add data
         # delete data

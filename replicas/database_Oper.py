@@ -37,30 +37,20 @@ def get_bucket_name_in_db(path):
     filenames = next(walk(path), (None, None, []))[2]  # [] if no file
     return filenames
     
-def load_all_buckets():
+def load_all_buckets(path):
     """
     loading all buckets
     """
-    filenames = get_bucket_name_in_db("database")
+    filenames = get_bucket_name_in_db(path)
     filenames = drop_non_json(filenames)
-    bucket_object = creating_bucket_object(filenames)
+    bucket_object = creating_bucket_object(filenames, path)
     #bucket_object['registry'].add({"name":"test","new":123})
     #print(bucket_object)
     return bucket_object
 
-def load_disk_bucket():
-    """
-    loading disk bucket
-    """
-    filenames = get_bucket_name_in_db("database_oper_log")
-    filenames = drop_non_json(filenames)
-    bucket_object = creating_bucket_object(filenames)
-    #bucket_object['registry'].add({"name":"test","new":123})
-    #print(bucket_object)
-    return bucket_object
     
     
-def creating_bucket_object(filename):
+def creating_bucket_object(filename, path):
     """
     load all bucket data in seperate objects
     """
@@ -68,7 +58,7 @@ def creating_bucket_object(filename):
     bucket_object = {}
     for bucket_name in filename:
         name_ = bucket_name.split('.')[0]
-        bucket_object.update({name_:TinyDB("database/"+bucket_name)})
+        bucket_object.update({name_:TinyDB(path+bucket_name)})
     return bucket_object
 
 def get_all_IDS(db_obj):
@@ -147,14 +137,25 @@ def add_record(db_obj,data):
     """
     id = db_obj.insert(data)
     return "Record added, ID is "+str(id)
+
+
+# for fault tolerance and recovery
+def get_marker_records(db_obj, sqn_no):
+    """
+    receive markar and return all records
+    """
+    q = Query()
+    history = db_obj.search(q.message.sqn_no > sqn_no)
+    return history
+    
 def search_by_query(db_obj, query):
     """
     """
     pass
     
 # Testing 
-db_buckets = load_all_buckets()
-db_operation = load_disk_bucket()
+db_buckets = load_all_buckets("database/")
+db_operation = load_all_buckets("database_oper_log/")
 #bck = load_all_buckets()
 #qry = {"id":9,"query":{"status":"updated"}}
 #print(search_by_id(bck['db'],3))
