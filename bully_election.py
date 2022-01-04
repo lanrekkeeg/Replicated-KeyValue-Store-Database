@@ -1,17 +1,13 @@
 import socket
 import multiprocessing
-from multiprocessing import Manager
-from replica_handler import ReplicaHandler
-import sys
 #import global_conf as glob_var
 import logging
 from util import *
 import json
-import datetime
 from broadcast import Broadcaster, BroadcastSender
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('test')
-
+from fault_tolerant import broad_cast_health
 #groupview = {1:'127.0.0.1:9001',2:'127.0.0.1:9002',3:'127.0.0.1:9004',4:'127.0.0.1:9005',5:'127.0.0.1:9006',6:'127.0.0.1:9007'}
 
 import socket
@@ -19,8 +15,9 @@ import time
 
 class Election(multiprocessing.Process):
 
-    def __init__(self, id,groupView,leaderID,Leader,isElection, participation, client_sockt=None):
+    def __init__(self, id,groupView,leaderID,Leader,isElection, participation, lock,client_sockt=None):
         super(Election, self).__init__()
+        self.lock = lock
         self.groupView = groupView
         self.leaderID = leaderID
         self.Leader = Leader
@@ -39,15 +36,16 @@ class Election(multiprocessing.Process):
         """
         Create connection for host acknowledge as part of the algoithm
         """
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         for key, val in self.sub_group.items():
             ip, port = val.split(':')
             try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.connect((ip, int(port)))
                 s.settimeout(1)
                 self.higer_node_sockets.append(s)
+                logger.debug("From Election, successfully created connection to host:{}".format(val))
             except Exception as exp:
-                logger.error("Node:{}, Got error while creating socket for election client".format(self.id))
+                logger.error("Got error while creating socket for election client, {}".format(str(exp)))
     
     def close_connection(self):
         """
@@ -64,9 +62,15 @@ class Election(multiprocessing.Process):
         ack = 0
         time_out_soc = 0
         for sock in self.higer_node_sockets:
+            message = {'nodeID': self.id, 'oper': 'election', 'message':{'ElectionStatus':'running','ack': True}}
+            message = json.dumps(message)
+            message = str.encode(message)
+            sock.send(message)
+            logger.info("From Election, sending ping to client")
             try:
                 data = sock.recv(1024)
                 ack += 1 
+                logger.info("Receive Pong from client ....")
                 break  # as there is sonme node with higher id exist, so need to continue
             except socket.timeout as exp:
                 time_out_soc += 1
@@ -87,11 +91,17 @@ class Election(multiprocessing.Process):
         logger.info("Node:{},Election Process Complete, I am winner".format(id))
         message = {'nodeID': self.id, 'oper': 'election', 'message':{'ElectionStatus':'complete', 'leader': self.id }}
         self.broadcaster.broadcast_message(message)
+        
+        self.lock.acquire()
         self.leaderID.value = self.id
         self.Leader.value = 1
+        self.participation.value = 0
+        self.isElection.value = 0
+        self.lock.release()
         logger.debug("updating global var...{},{}".format(self.leaderID.value, self.Leader.value))
         # broacast thread
         logger.info("Node:{},Starting Health Broadcaster".format(id))
+        
         broad_cast = multiprocessing.Process(target=broad_cast_health, args = (self.id, self.Leader, self.broadcaster))
         broad_cast.start()
         #broad_cast.join()
@@ -99,17 +109,23 @@ class Election(multiprocessing.Process):
         logger.info("Node:{},Terminating Election Process as it is of no use now, election is already finish.".format(id))
         self.close_connection()
         logger.info("Node:{},result routine finish....".format(self.id))
-        self.participation.value = 0
+        
+     
 
         
     def run(self):
         """
         """
+        if self.Leader.value:
+            logger.info("I am leader, not to conduct election again")
+            return
         self.participation.value = 1
-        logger.info("Election is started ......")
+        # new addition
+        self.isElection.value = 1
+        logger.info("################################ Election is started ##########################################")
         sorted_groupview = sort_dict(self.groupView['groupView'])
         logger.debug("Node:{},Node group view after sorting:{}".format(id, sorted_groupview))
-        self.sub_group =  dict((k, v) for k, v in sorted_groupview.items() if k > self.id)
+        self.sub_group =  dict((k, v) for k, v in sorted_groupview.items() if int(k) > int(self.id))
         logger.debug("Node:{},Sub Node group view:{}".format(id, self.sub_group))
                 
         if len(self.sub_group) == 0:
@@ -137,6 +153,9 @@ class Election(multiprocessing.Process):
                     return
             else:
                 # exiting election process
+                self.participation.value = 0
+                # new addition
+                self.isElection.value = 0
                 logger.info("Node:{},Higher node available, backing from election".format(id))
                 self.close_connection()
                 return

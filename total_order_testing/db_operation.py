@@ -37,21 +37,27 @@ def send_message(message,sqn, time_, client):
     sock.sendto(message, (MCAST_GRP, MCAST_PORT))
     print(client," sent message with sqn ",sqn, " and time is" ,time_)
 
-    
+def get_time():
+    """
+    will return time in UTC with string format
+    """
+    tm = datetime.utcnow().strftime("%m/%d/%Y  %H:%M:%S.%f")
+    return tm
 def client_1(sqn, loc,l):
     print("starting client 1")
     
     sqn_ = get_sqn(loc, sqn,l)
+    #
     time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    message = {"id":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"8:00","type":"MS"}, "sqn_no":sqn_}}
+    message = {"nodeID":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"8:00","type":"MS"}, "sqn_no":sqn_}}
     send_message(message, sqn_, time_,"client1")
     sqn_ = get_sqn(loc, sqn,l)
     time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    message = {"id":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"9:00","type":"MS"}, "sqn_no":sqn_}}
+    message = {"nodeID":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"9:00","type":"MS"}, "sqn_no":sqn_}}
     send_message(message, sqn_, time_,"client1")
     time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
     sqn_ = get_sqn(loc, sqn,l)    
-    message = {"id":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"10:00","type":"MS"}, "sqn_no":sqn_}}
+    message = {"nodeID":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"10:00","type":"MS"}, "sqn_no":sqn_}}
     send_message(message, sqn_, time_,"client1")
     #slp = random.uniform(0.1, 0.3)
     #time.sleep(slp)
@@ -67,21 +73,21 @@ def response():
         message = json.loads(message)
         
         if message.get("oper",None) == "response":
-            print("Response received for ",message['id']," and response is \n",message['message'],"\n")
+            print("Response received for ",message['nodeID']," and response is \n",message['message'],"\n")
             
 def client_2(sqn, loc,l):
     print("Starting client 2")
     sqn_ = get_sqn(loc, sqn,l)
     time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    message = {"id":"clien_2","send_time": time_,"oper": "key-value", "message":{"oper-type": "searchbyID", "bucket_name":"db","content":[1], "sqn_no":sqn_}}
+    message = {"nodeID":"clien_2","send_time": time_,"oper": "key-value", "message":{"oper-type": "searchbynodeID", "bucket_name":"db","content":[1], "sqn_no":sqn_}}
     send_message(message, sqn_, time_,"client2")
     sqn_ = get_sqn(loc, sqn,l)
     time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    message = {"id":"clien_2","send_time": time_,"oper": "key-value", "message":{"oper-type": "deletebyID", "bucket_name":"db","content":[1], "sqn_no":sqn_}}
+    message = {"nodeID":"clien_2","send_time": time_,"oper": "key-value", "message":{"oper-type": "deletebynodeID", "bucket_name":"db","content":[1], "sqn_no":sqn_}}
     send_message(message, sqn_, time_,"client2")
     time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
     sqn_ = get_sqn(loc, sqn,l)    
-    message = {"id":"clien_2","send_time": time_,"oper": "key-value", "message":{"oper-type": "searchbyID", "bucket_name":"db","content":[1], "sqn_no":sqn_}}
+    message = {"nodeID":"clien_2","send_time": time_,"oper": "key-value", "message":{"oper-type": "searchbynodeID", "bucket_name":"db","content":[1], "sqn_no":sqn_}}
     send_message(message, sqn_, time_,"client2")
     #slp = random.uniform(0.1, 0.3)
     #time.sleep(slp)

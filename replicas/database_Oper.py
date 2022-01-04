@@ -153,9 +153,14 @@ def search_by_query(db_obj, query):
     """
     pass
     
+def get_last_save_sqn_no():
+    """
+    return last store sqn number
+    """
 # Testing 
 db_buckets = load_all_buckets("database/")
 db_operation = load_all_buckets("database_oper_log/")
+cordinator_logs = load_all_buckets("cordinator_logs/")
 #bck = load_all_buckets()
 #qry = {"id":9,"query":{"status":"updated"}}
 #print(search_by_id(bck['db'],3))

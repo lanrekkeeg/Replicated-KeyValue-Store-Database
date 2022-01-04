@@ -10,7 +10,8 @@ conn, addr = s.accept()
 print ('Connected by', addr)
 while 1:
     data = conn.recv(1024)
-    if not data: break
+    #if not data: break
+    print("Data:{}".format(data))
     time.sleep(2)
     
     conn.send(data)

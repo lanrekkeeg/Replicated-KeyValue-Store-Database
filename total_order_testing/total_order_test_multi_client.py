@@ -36,7 +36,7 @@ def client_1(sqn, loc,l):
     while True:
         sqn_ = get_sqn(loc, sqn,l)
         time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-        message = {"id":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "read", "sqn_no":sqn_}}
+        message = {"nodeID":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "read", "sqn_no":sqn_}}
         message = json.dumps(message)
         message = str.encode(message)    
         sock.sendto(message, (MCAST_GRP, MCAST_PORT))
@@ -52,7 +52,7 @@ def client_2(sqn, loc,l):
     while True:
         sqn_ = get_sqn(loc, sqn,l)
         time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-        message = {"id":"clien_2","send_time":time_,"oper": "key-value", "message":{"oper-type": "write", "sqn_no":sqn_}}
+        message = {"nodeID":"clien_2","send_time":time_,"oper": "key-value", "message":{"oper-type": "write", "sqn_no":sqn_}}
         message = json.dumps(message)
         message = str.encode(message)    
         sock.sendto(message, (MCAST_GRP, MCAST_PORT))

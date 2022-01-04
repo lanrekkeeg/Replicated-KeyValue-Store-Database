@@ -17,12 +17,12 @@ data =  data.decode()
 data = json.loads(data)
 print ('Received', data['message'])
 s.send(b"seems like connection is working..")
-s.settimeout(0.00001)
-
-try:
-    data = s.recv(1024)
-except socket.timeout as e:
-    print(e)
-#s.close()
-print ('Received', repr(data))
-time.sleep(60)
+s.settimeout(0.1)
+while True:
+    try:
+        data = s.recv(1024)
+    except socket.timeout as e:
+        print(e)
+    #s.close()
+    print ('Received', repr(data))
+    time.sleep(2)

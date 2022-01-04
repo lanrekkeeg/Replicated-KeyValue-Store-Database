@@ -1,4 +1,4 @@
-from os import times
+from os import times, write
 from broad_multi_cast import MulticastRec, MulticastSend
 import logging
 import multiprocessing
@@ -9,7 +9,8 @@ import time
 from database_Oper import *
 import copy
 from tinydb import TinyDB, Query
-
+import datetime
+from replica_handler import ReplicaHandler
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('replica-manager')
 import json
@@ -52,7 +53,10 @@ class Replica(multiprocessing.Process):
             message = json.loads(message)
             #logger.debug("Received request, adding into hold_back_queu...")
             if message['oper'] == "key-value":
+                message['timestamp'] = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+
                 logger.debug("Adding record in hold back queue")
+                add_record(cordinator_logs['logs'], message )
                 # discard duplicates e.g curr_sqn = 12, upcoming is 11 then we need to discard it
                 self.hold_back_Queue.append(message)
                 self.deliver()
@@ -121,7 +125,10 @@ class Replica(multiprocessing.Process):
         response["data"] = resp
         message['message'] = response
         message['oper'] = "response"
+        message['sqn_no'] = original_message['message']['sqn_no']
+        message['nodeID'] = original_message['nodeID']
         self.response_queue.append(message)
+        logger.info("Response queue is:{}".format(self.response_queue))
         self.write_to_disk(original_message)
         return
         # add data
@@ -145,14 +152,16 @@ class Replica(multiprocessing.Process):
             try:
                 msg = self.response_queue.pop()
                 self.muticast_send.broadcast_message(msg)
-                logger.info("sending response back to {}".format(msg['id']))
+                logger.info("sending response back to {}".format(msg['nodeID']))
             except Exception as exp:
+                #logger.info("Got error while sending response to client..., {}".format(exp))
                 #logger.info("Holdback queue is:{}".format(self.response_queue))
                 #logger.info("Holdback queue sqn no is :{}".format(self.hold_back_Queue_sqn))
-
+                
                 time.sleep(0.2)
-                #print("response Queue is empy..")
                 pass
+                #print("response Queue is empy..")
+                
 
 if __name__ == "__main__":
     manager = Manager()
@@ -162,12 +171,15 @@ if __name__ == "__main__":
     hold_back_queue = manager.list([])
     response_queue = manager.list([])
     sqn_no = manager.Value('i',0)
+    lock = manager.Lock()
     R_s = Replica(groupView, response_queue, hold_back_queue, sqn_no,is_ready, id,1)
     R_r = Replica(groupView, response_queue, hold_back_queue, sqn_no,is_ready, id,0)
-
+    R_hand = ReplicaHandler(id,is_ready,lock)
     R_r.start()
     R_s.start()
+    R_hand.start()
 
     R_r.join()
     R_s.join()
+    R_hand.join()
     

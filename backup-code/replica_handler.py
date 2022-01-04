@@ -19,7 +19,7 @@ class ReplicaHandler(multiprocessing.Process):
         self.host = socket.gethostbyname(socket.gethostname())
         self.isLeader = isLeader
         self.groupView = groupview
-        self.sqn_no = sqn
+        self.sqn = sqn
         self.id = id
         self.lock = lock
         self.send_multicast = MulticastSend(self.id)
@@ -47,25 +47,17 @@ class ReplicaHandler(multiprocessing.Process):
                 if message.get('oper',None) == "groupView":
                     self.update_group_view(message)
                 
-                if message.get("oper",None) == "response":
-                    if message['message'].get("sqn_no",None) is not None:
-                        self.update_sqn_no(message)
-                    
+                if message.get("oper",None) == "status":
+                    if message['message'].get("status",None) == "sqn":
+                        self.multicast_sqn(message['nodeID'])
+                    if message['message'].get("status",None) == "leader":
+                        self.multicast_leader()
+                        logger.info("Recv Leader verification request...")
                         
 
             except Exception as e:
                 logger.error("Got exception while handling incoming data error is, {}".format(str(e)))
     
-    def update_sqn_no(self, message):
-        """
-        update sequence number which is received from replica handler
-        """
-        logger.info("Updating sqn no which is received from replica: {}".format(message['nodeID']))
-        sqn_no = message['message']['sqn_no']
-        self.lock.acquire()
-        self.sqn_no.value = sqn_no
-        self.lock.release()
-        
     def multicast_sqn(self, id): 
         """
         """

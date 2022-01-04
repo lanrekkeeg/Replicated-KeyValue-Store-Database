@@ -11,6 +11,10 @@ from client_handler import ClientHandler
 from broadcast import  Broadcaster
 from startup_routine import Startup_Routine
 from group_view import GroupView        
+import socket
+import signal
+import sys
+signal.signal(signal.SIGTERM, lambda signum, stack_frame: sys.exit(1))
 
 if __name__ == '__main__':
     # 1. start group view process
@@ -25,7 +29,7 @@ if __name__ == '__main__':
 
     groupView = manager.dict({'groupView':{}})
     groupViewReplica = manager.dict({'groupView':{}})
-    sqn = manager.Value('i', 0)
+    sqn = manager.Value('i', -1)
     leaderID =  manager.Value('i', -1)
     Leader = manager.Value('i', 0) # either 0 or 1
     isElection = manager.Value('i', 0) # either 0 or 1
@@ -37,53 +41,31 @@ if __name__ == '__main__':
     id = sys.argv[1]
     port = int(sys.argv[2])
     
-    broad = Broadcaster(id, groupView, leaderID, Leader,isElection ,participation, lis=1)
-    broad2 = Broadcaster(id, groupView, leaderID, Leader,isElection, participation, lis=0)
-    clients = ClientHandler(id,'127.0.0.1', port, groupView, leaderID, Leader, participation, isElection)
+    broad = Broadcaster(id, groupView, leaderID, Leader, isElection, participation, port, lock_rep, sqn)
+    clients = ClientHandler(id,socket.gethostbyname(socket.gethostname()), port, groupView,groupViewReplica, leaderID, Leader, isElection,participation,lock_rep,sqn)
     view = GroupView(id,port,groupView, leaderID, Leader)
-    replicaHandler = ReplicaHandler(id,Leader,groupViewReplica,sqn,lock_rep)
+    replicaHandler = ReplicaHandler(id,Leader,groupViewReplica,sqn,port,lock_rep)
+    #replicaHandler.daemon = True
     replicaHandler.start()
+    #broad.daemon = True
+    
     broad.start()
-    broad2.start()
+    #clients.daemon = True
     clients.start()
+    #view.daemon = True
     view.start()
     
-    routine = Startup_Routine(id,groupView, leaderID, Leader, isElection, participation)
+    routine = Startup_Routine(id,groupView, leaderID, Leader, isElection, participation,lock_rep)
     time.sleep(1) # to give  time to form group view
     
-    # check for leader
-    
-    #if isElection:
-    #    elc = Election(id)
-    #    elc.start()
-    
-    '''
-    
-
-    '''
    
     
     broad.join()
-    broad2.join()
     view.join()
     clients.join()
     replicaHandler.join()
-
-
-    #elc.join()
-
     
     
-    # wait for some time
-    # send election message that election is started
-    #process.append(multiprocessing.Process(target=broad.listen_to_broadcast_message, args=()))
-    #process.append(multiprocessing.Process(target=broad2.broad_cast_message, args=()))
-
-    #for proc in process:
-        #proc.daemon = True
-
-        #proc.start()
-        #proc.join()
     
     
     

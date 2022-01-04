@@ -5,7 +5,6 @@ from multiprocessing import Manager
 import sys
 #import global_conf as glob_var
 import logging
-from util import *
 import json
 import datetime
 
@@ -69,6 +68,8 @@ class Broadcaster(multiprocessing.Process):
         self.broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.broad_cast_receiver.bind(("192.168.0.255", 37020))
         
+        self.health_broadcast = None
+        
     
     def run(self):
     
@@ -98,7 +99,7 @@ class Broadcaster(multiprocessing.Process):
                 logger.info("{},{}:*********************************************************************************************************************".format(self.Leader.value,self.leaderID.value))
             # itself id will be updated, won't cause issue if leader itself update itself
             if data.get("oper",None) == "response":
-                logger.info("Node:{}, reponse is recieved for status, updating leaderID".format(self.id))
+                logger.info("Node:{}, reponse is recieved for status, updating leaderID:{}".format(self.id,data['message']['leader']))
                 message = data['message']
                 self.leaderID.value = int(message['leader'])
                 
@@ -122,12 +123,12 @@ class Broadcaster(multiprocessing.Process):
                     # is election started?
                     
                     if message['ElectionStatus'] == 'started':
-                        logger.info("Election message received, stopping and resetting all settings")
+                        logger.info("&&&&&&&&&&&&&&&& Election message received, stopping and resetting all settings &&&&&&&&&&&&&&")
                         self.leaderID.value = -1
                         self.Leader.value = 0
                         self.isElection.value = 1 # may be need to remove incase
                         try:
-                            self.broad_cast.terminate()
+                            self.health_broadcast.terminate()
                         except Exception as exp:
                             logger.info("Node:{}, issue with closing broadcast module, error is {}".format(self.id, exp))
                         
@@ -135,16 +136,16 @@ class Broadcaster(multiprocessing.Process):
                         logger.info("Node:{}, receive election complete message, starting ping module. Message is :{}".format(self.id, message))
                         self.isElection.value = 0
                         self.leaderID.value = int(data['message']['leader'])
-                        broad_cast = multiprocessing.Process(target=recv_ping, args = (self.id,37020, self.broadcaster, self.groupView,self.leaderID,self.Leader,self.participation))
-                        broad_cast.start()
-                        broad_cast.join()
+                        self.health_broadcast = multiprocessing.Process(target=recv_ping, args = (self.id,37020, self.broadcaster, self.groupView,self.leaderID,self.Leader,self.participation, self.isElection))
+                        self.health_broadcast.start()
+                        #broad_cast.join()
                     
                 if data.get('oper',None) == 'groupview' and data.get('nodeID',None) != self.id:
                     logger.info('Node:{}, Groupview data is, {}'.format(self.id, data))
                     temp_dict = self.groupView['groupView']
                     temp_dict.update({data['nodeID']: data['message']['host'] + ':' + str((data['message']['port']))})
                     self.groupView['groupView'] = temp_dict
-                    logger.debug("Node:{}, updated group view is,{}".format(self.id, self.groupView['groupView']))
+                    logger.debug("@@@@@@@@ Node:{}, updated group view is,{}    @@@@@@@@@".format(self.id, self.groupView['groupView']))
                     
                     # is election completed?
                       # leaderID = data['message']['leaderID']
@@ -250,13 +251,16 @@ class Election(multiprocessing.Process):
         self.close_connection()
         logger.info("Node:{},result routine finish....".format(self.id))
         self.participation.value = 0
+        self.isElection.value = 0
 
         
     def run(self):
         """
         """
         self.participation.value = 1
-        logger.info("Election is started ......")
+        # new addition
+        self.isElection.value = 1
+        logger.info("################################ Election is started ##########################################")
         sorted_groupview = sort_dict(self.groupView['groupView'])
         logger.debug("Node:{},Node group view after sorting:{}".format(id, sorted_groupview))
         self.sub_group =  dict((k, v) for k, v in sorted_groupview.items() if k > self.id)
@@ -323,7 +327,7 @@ class CareTakerServer(multiprocessing.Process):
                     if msg['ElectionStatus'] == 'running':
                         logger.info("Node:{}, receive messagem from election".format(self.id))
                         # start election, by passing the client socket if available
-                        message = {'id': self.id, 'port':port, 'oper': 'election', 'message':{'ElectionStatus':'running','ack': True}}
+                        message = {'nodID': self.id, 'port':port, 'oper': 'election', 'message':{'ElectionStatus':'running','ack': True}}
                         message = json.dumps(message)
                         message = str.encode(message)
                         self.client_sockt.send(message)
@@ -365,6 +369,7 @@ class ClientHandler(multiprocessing.Process):
         self.leaderID = leaderID
         self.Leader = Leader
         self.isElection = isElection
+        self.participation = participation
         self.id = id
         self.port = port
         self.ip = ip
@@ -394,7 +399,7 @@ class ClientHandler(multiprocessing.Process):
             #data, address = server_socket.recvfrom(buffer_size)
             #print('Received message \'{}\' at {}:{}'.format(data.decode(), address[0], address[1]))
             # Create a server process
-            p = CareTakerServer(self.id, conn,addr, self.groupView, self.leaderID, self.Leader, self.isElection)
+            p = CareTakerServer(self.id, conn,addr, self.groupView, self.leaderID, self.Leader, self.isElection, self.participation)
             p.start()
             p.join()
         
@@ -428,24 +433,31 @@ class Startup_Routine(object):
         if self.leaderID.value == -1: # -1 mean none
             logger.info("Node:{}, No leader node found, starting fresh election")
                 # start the election
+                
+            # new addition ....
+            message = {'nodeID': self.id, 'oper': 'election', 'message':{'ElectionStatus':'started'}}
+            self.broadcaster.broadcast_message(message)
+            
             election = Election(self.id, self.groupView, self.leaderID, self.Leader, self.isElection,self.participation,None)
             election.start()
-            election.join()
+            #election.join()
             logger.info("Startup routine finish with election")
             
         elif self.leaderID.value < int(self.id):
                 # bully old node
             logger.info("Node:{}, leader found but not valid, bulllying leader:{} and starting election...".format(self.id, self.leaderID.value))
-            message = {'id': self.id, 'oper': 'election', 'message':{'ElectionStatus':'started'}}
+            message = {'nodeID': self.id, 'oper': 'election', 'message':{'ElectionStatus':'started'}}
             self.broadcaster.broadcast_message(message)
             time.sleep(0.2)
             election = Election(self.id, self.groupView, self.leaderID, self.Leader, self.isElection, self.participation,None )
             election.start()
-            election.join()
+            #election.join()
                 # start the election
         elif self.leaderID.value != -1: # mean not None
             logger.debug("Node:{}, leader already exist, starting ping module for this node...")
-            broad_cast = multiprocessing.Process(target=recv_ping, args = (self.id,37020, self.broadcaster, self.groupView,self.leaderID,self.Leader,self.participation,))
+            self.isElection.value = 0
+            
+            broad_cast = multiprocessing.Process(target=recv_ping, args = (self.id,37020, self.broadcaster, self.groupView,self.leaderID,self.Leader,self.participation,self.isElection))
             broad_cast.start()
             #broad_cast.join()
             
@@ -463,7 +475,7 @@ class Startup_Routine(object):
         
     
         
-def recv_ping(id,port, broad_caster, groupView, leaderID, Leader, participation):
+def recv_ping(id,port, broad_caster, groupView, leaderID, Leader, participation,isElection):
     
     """
     Check for health
@@ -472,6 +484,8 @@ def recv_ping(id,port, broad_caster, groupView, leaderID, Leader, participation)
     3. if message rec then check last time
     4. else send election notification
     """
+    logger.info("XXXXXXXXXXXXXXXXX Starting Ping Service XXXXXXXXXXXXXXXX")
+
     broad_cast_receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) # UDP
     broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     #broad_cast_sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -481,7 +495,7 @@ def recv_ping(id,port, broad_caster, groupView, leaderID, Leader, participation)
     broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     broad_cast_receiver.bind(("", port))
     last_time = datetime.datetime.now() 
-    while True:
+    while not isElection.value:
         data, addr = broad_cast_receiver.recvfrom(1024)
         # parse it
         curr_time = datetime.datetime.now() 
@@ -497,14 +511,17 @@ def recv_ping(id,port, broad_caster, groupView, leaderID, Leader, participation)
             # wait for t second
             # check election
         diff =  curr_time - last_time
-        logger.info("Node:{}, time diff for ping message is {} and message is {}".format(id, diff, data))
+        #logger.info("Node:{}, time diff for ping message is {} and message is {}".format(id, diff, data))
+        logger.info("Ping message is {}".format(data))
+
         diff = diff.total_seconds()
         if diff > 2: # to call off for election
         
             # check if election is already started?
             # broadcast message for election
             # if not then start the election
-            message = {'host': '127.0.0.1', 'oper': 'election', 'message':{'ElectionStatus':'running' }}
+            logger.info("$$$$$$$$$$$$$$ Leader Found Dead $$$$$$$$$$$$")
+            message = {"nodeID":id,'host': '127.0.0.1', 'oper': 'election', 'message':{'ElectionStatus':'started' }}
             broad_caster.broadcast_message(message)
             #message = json.dumps(message)
             #message = str.encode(message)
@@ -517,12 +534,21 @@ def recv_ping(id,port, broad_caster, groupView, leaderID, Leader, participation)
             #election.join()
             return
     
+    logger.info("^^^^^^^^^ Stopping Ping Service ^^^^^^^^^^^^^")
+    
             
 
          
         
             
-            
+def sort_dict(node_group):
+    """
+    return sorted dictionary by key
+    """
+    
+    sorted_node_id = dict(sorted(node_group.items(), key = lambda x:x[0]))
+    return sorted_node_id
+    
         
         
 def broad_cast_health(id,Leader, broad_caster):
@@ -531,6 +557,7 @@ def broad_cast_health(id,Leader, broad_caster):
     broadcast health if master
     1. start broadcasting health at interval of 1 second
     """
+    logger.info("%%%%%%%%%%%%%%% starting broadcast health %%%%%%%%%%%%%%%%%%%%%")
     check = 1
     while check:
         message = {"id": id, "ping": True}
@@ -566,7 +593,7 @@ if __name__ == '__main__':
     
     broad = Broadcaster(id, groupView, leaderID, Leader,isElection ,participation, lis=1)
     broad2 = Broadcaster(id, groupView, leaderID, Leader,isElection, participation, lis=0)
-    clients = ClientHandler(id,'127.0.0.1', port, groupView, leaderID, Leader, participation, isElection)
+    clients = ClientHandler(id,socket.gethostbyname(socket.gethostname()), port, groupView, leaderID, Leader, isElection, participation)
     view = GroupView(id,port,groupView, leaderID, Leader)
     broad.start()
     broad2.start()
