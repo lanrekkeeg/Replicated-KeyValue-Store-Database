@@ -48,7 +48,7 @@ class Startup_Routine(object):
                 data = json.loads(data)
                 if data.get('oper', None) == "response":
                     if data['message'].get("sqn_no",None) is not None:
-                        sqn_list.append((data['nodeID'],data['messsage']['sqn_no']))  
+                        sqn_list.append((data['nodeID'],data['message']['sqn_no']))  
             except socket.error as exp:
                 logger.error("In response, Got {}".format(exp))
             ts_new = datetime.datetime.now()
