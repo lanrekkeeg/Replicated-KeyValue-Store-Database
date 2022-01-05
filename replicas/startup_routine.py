@@ -1,17 +1,10 @@
 
-import multiprocessing
-
-#import global_conf as glob_var
 import logging
 from util import *
-
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('test')
-from datetime import datetime
-import time
+import datetime
 from broad_multi_cast import *
-from bully_election import Election
-from fault_tolerant import recv_ping
 
 class Startup_Routine(object):
     def __init__(self,id,sqn_no, is_alive):
@@ -25,11 +18,12 @@ class Startup_Routine(object):
             else if self.find_leader():
                 check node id, if smaller then bully and start the election
         '''
+        self.id = id
         self.is_alive = is_alive
         self.sqn_no = sqn_no
         self.multicast_send = MulticastSend(id)
         self.multicast_rec = MulticastRec(id)    
-        self.start_rotune()
+        self.start_routine()
         
     
     def close_sock(self):

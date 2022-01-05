@@ -1,4 +1,3 @@
-from _typeshed import Self
 from os import times, write
 from broad_multi_cast import MulticastRec, MulticastSend
 import logging
