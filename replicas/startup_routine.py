@@ -22,7 +22,8 @@ class Startup_Routine(object):
         self.is_alive = is_alive
         self.sqn_no = sqn_no
         self.multicast_send = MulticastSend(id)
-        self.multicast_rec = MulticastRec(id)    
+        self.multicast_rec = MulticastRec(id)
+        self.multicast_rec.sock.settimeout(10)
         self.start_routine()
         
     
@@ -41,17 +42,19 @@ class Startup_Routine(object):
         ts_new = datetime.datetime.now()
         sqn_list = []
         while (ts_new-ts_now).total_seconds()<=10:
-            ts_new = datetime.datetime.now()
-            data, addr= self.multicast_rec.sock.recvfrom(1024)
             try:
+                data, addr= self.multicast_rec.sock.recvfrom(1024)
                 data = data.decode()
                 data = json.loads(data)
                 if data.get('oper', None) == "response":
                     if data['message'].get("sqn_no",None) is not None:
-                        sqn_list.append((data['nodeID'],data['messsage']['sqn_no']))
-                        
-            except Exception as exp:
+                        sqn_list.append((data['nodeID'],data['messsage']['sqn_no']))  
+            except socket.error as exp:
                 logger.error("In response, Got {}".format(exp))
+            ts_new = datetime.datetime.now()
+
+            
+                
         return sqn_list
         
     def start_routine(self):
@@ -66,6 +69,7 @@ class Startup_Routine(object):
         # local sqn number
         if len(sqn_list) == 0:
             # i am only alive, start the process
+            logger.info("Receive no reply from any client assuming to be the 1st")
             self.close_sock()
             return
         else:
