@@ -40,6 +40,7 @@ class ReplicaHandler(multiprocessing.Process):
                 data, addr = self.recv_multicast.sock.recvfrom(1024)
                 message = data.decode()
                 message = json.loads(message)
+                logger.debug("Data receive by handler:{}".format(message))
                 #logger.info("*************message received************") 
                 if message.get("oper",None) == "status":
                     if message['message'].get("status",None) == "sqn_no" and message['nodeID'] != self.id:

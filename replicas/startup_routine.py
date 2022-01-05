@@ -46,6 +46,7 @@ class Startup_Routine(object):
                 data, addr= self.multicast_rec.sock.recvfrom(1024)
                 data = data.decode()
                 data = json.loads(data)
+                logger.info("Receive reply in wait_for_reply:{}".format(data))
                 if data.get('oper', None) == "response":
                     if data['message'].get("sqn_no",None) is not None:
                         sqn_list.append((data['nodeID'],data['message']['sqn_no']))  
