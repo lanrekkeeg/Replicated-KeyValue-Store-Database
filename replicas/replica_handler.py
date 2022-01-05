@@ -42,7 +42,7 @@ class ReplicaHandler(multiprocessing.Process):
                 message = json.loads(message)
                 #logger.info("*************message received************") 
                 if message.get("oper",None) == "status":
-                    if message['message'].get("status",None) == "sqn_no":
+                    if message['message'].get("status",None) == "sqn_no" and message['nodeID'] != self.id:
                         logger.info("status data is, {}".format(message['message']))
                         self.multicast_sqn(message['nodeID'])
                 elif message.get("oper",None) == "recovery":
