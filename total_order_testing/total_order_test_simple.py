@@ -14,11 +14,11 @@ def main():
     sqn = 0
     while True:
         time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-        message = {"send_time":time_,"oper": "key-value", "message":{"oper-type": "read", "sqn_no":sqn}}
+        message = {"nodeID":"clien_1","send_time":time_,"oper": "key-value", "message":{"sqn_no":sqn,"oper-type": "write", "bucket_name":"db","content":{"class":"8:00","type":"MS"}}}
         message = json.dumps(message)
         message = str.encode(message)    
         sock.sendto(message, (MCAST_GRP, MCAST_PORT))
-        sqn = 1
+        sqn +=1
         print("message is sent ...")
         time.sleep(0.2)
         

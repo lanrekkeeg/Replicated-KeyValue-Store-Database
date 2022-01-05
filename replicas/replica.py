@@ -1,3 +1,4 @@
+from _typeshed import Self
 from os import times, write
 from broad_multi_cast import MulticastRec, MulticastSend
 import logging
@@ -9,8 +10,10 @@ import time
 from database_Oper import *
 import copy
 from tinydb import TinyDB, Query
+import pickle
 import datetime
 from replica_handler import ReplicaHandler
+from startup_routine import Startup_Routine
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('replica-manager')
 import json
@@ -45,6 +48,22 @@ class Replica(multiprocessing.Process):
     def send_response(self):
         pass
     
+    def dump_hold_back_queue(self):
+        """
+        """
+        logger.debug("Dumping holdback queue")
+        hld_que = self.hold_back_Queue[:]
+        print(self.hold_back_Queue)
+        hld_que.append({"sqn_no":self.hold_back_Queue_sqn.value})
+        with open('db_hld_queue/hld.data', 'wb') as handle:
+            # store the data as binary data stream
+            pickle.dump(hld_que, handle)
+        logger.debug("hold back queue dump successfully...")
+        #print(self.hold_back_Queue)
+
+        
+    
+    
     def receive(self):
         logger.info("starting receving process....")
         while True:
@@ -59,6 +78,7 @@ class Replica(multiprocessing.Process):
                 add_record(cordinator_logs['logs'], message )
                 # discard duplicates e.g curr_sqn = 12, upcoming is 11 then we need to discard it
                 self.hold_back_Queue.append(message)
+                self.dump_hold_back_queue()
                 self.deliver()
     
     def deliver(self):
@@ -67,7 +87,7 @@ class Replica(multiprocessing.Process):
         #print("len is ", len(self.hold_back_Queue))
         while iter < len(self.hold_back_Queue):
             # in_sqn = curr_sqn(+1)
-            if self.hold_back_Queue[iter]['message']['sqn_no'] == self.hold_back_Queue_sqn.value:
+            if self.hold_back_Queue[iter]['message']['sqn_no'] == (self.hold_back_Queue_sqn.value+1):
                 logger.info("Message with sqn no {} and send time {} is delived".format(self.hold_back_Queue_sqn.value,self.hold_back_Queue[iter]['send_time']))
                 self.hold_back_Queue_sqn.value +=1
                 msg = self.hold_back_Queue.pop(iter) #self.hold_back_Queue[iter]
@@ -76,9 +96,11 @@ class Replica(multiprocessing.Process):
                 #self.response_queue.append(msg)
                 self.key_value_operation(msg)
                 iter = 0
+                self.dump_hold_back_queue()
                 continue
             # to remove duplicates
             elif self.hold_back_Queue[iter]['message']['sqn_no'] <= self.hold_back_Queue_sqn.value:
+                self.hold_back_Queue.pop(iter) #self.hold_back_Queue[iter]
                 logger.debug("discarding duplicates..")
 
             iter +=1
@@ -174,11 +196,11 @@ if __name__ == "__main__":
     lock = manager.Lock()
     R_s = Replica(groupView, response_queue, hold_back_queue, sqn_no,is_ready, id,1)
     R_r = Replica(groupView, response_queue, hold_back_queue, sqn_no,is_ready, id,0)
-    R_hand = ReplicaHandler(id,is_ready,lock)
+    R_hand = ReplicaHandler(id,is_ready,lock, sqn_no)
     R_r.start()
     R_s.start()
     R_hand.start()
-
+    start_routine = Startup_Routine(id, sqn_no, is_ready)
     R_r.join()
     R_s.join()
     R_hand.join()

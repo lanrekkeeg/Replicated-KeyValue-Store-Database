@@ -61,7 +61,7 @@ class ReplicaHandler(multiprocessing.Process):
         update sequence number which is received from replica handler
         """
         logger.info("Updating sqn no which is received from replica: {}".format(message['nodeID']))
-        sqn_no = message['message']['sqn_no']
+        sqn_no = message['message']['sqn_no'] + 1
         self.lock.acquire()
         self.sqn_no.value = sqn_no
         self.lock.release()

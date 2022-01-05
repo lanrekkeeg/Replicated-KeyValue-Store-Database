@@ -62,7 +62,7 @@ class CareTakerServer(multiprocessing.Process):
         ts_now = datetime.datetime.now()
         ts_new = datetime.datetime.now()
         while (ts_new-ts_now).total_seconds()<=10:
-            ts_new = datetime.now()
+            ts_new = datetime.datetime.now()
             data, addr= self.multicast_rec.sock.recvfrom(1024)
             try:
                 data = data.decode()
@@ -74,6 +74,8 @@ class CareTakerServer(multiprocessing.Process):
                             return data
             except Exception as exp:
                 logger.error("In response, Got {}".format(exp))
+        message = {"nodeID":  self.id, "oper": "response", "message": {"success": 0, "data": "Failed to perform request"}}
+        return message
             
     def run(self):
         logger.debug("Node:{},process is spawn for new client".format(id))

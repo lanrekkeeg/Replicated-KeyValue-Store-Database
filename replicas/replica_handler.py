@@ -7,19 +7,19 @@ from broad_multi_cast import MulticastSend, MulticastRec
 import logging
 from util import *
 import json
-import datetime
 from util import *
 from database_Oper import *
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('test')
 
 class ReplicaHandler(multiprocessing.Process):
-    def __init__(self, id,isReady,lock):
+    def __init__(self, id,isReady,lock, sqn):
         super(ReplicaHandler, self).__init__()
         self.host = socket.gethostbyname(socket.gethostname())
         self.isReady = isReady
         self.id = id
         self.lock = lock
+        self.sqn = sqn
         self.send_multicast = MulticastSend(self.id)
         self.recv_multicast = MulticastRec(self.id)
 
@@ -45,6 +45,13 @@ class ReplicaHandler(multiprocessing.Process):
                     if message['message'].get("status",None) == "sqn_no":
                         logger.info("status data is, {}".format(message['message']))
                         self.multicast_sqn(message['nodeID'])
+                elif message.get("oper",None) == "recovery":
+                    if message.get("requested_replica",None) == self.id:
+                        """
+                        starting
+                        """
+                        self.recovery_process(message)
+                    
             except Exception as e:
                 logger.error("Got exception while handling incoming data error is, {}".format(str(e)))
     
@@ -59,6 +66,26 @@ class ReplicaHandler(multiprocessing.Process):
         logger.info("sending sqn number to replica manager: {}".format(id))
         message = {"nodeID":self.id,"oper": "response","message":{"success":1, "sqn_no":sqn}}
         self.send_multicast.broadcast_message(message)
+        
+    def recovery_process(self, message):
+        """
+        """
+        logger.info("Starting recovery service....")
+        from_sqn = message['message']['from_sqn']
+        q = Query()
+        self.lock.acquire()
+        local_sqn = self.sqn.value
+        self.lock.release()
+
+        data = cordinator_logs['logs'].search(q.message.sqn_no > int(from_sqn))
+        for record in data:
+            """
+            """
+            if record['message']['sqn_no'] <= local_sqn:
+                self.send_multicast.broadcast_message(record)
+        
+        logger.info("Finish sending record from {} to {} sqn".format(from_sqn, local_sqn))
+        
         
  
 

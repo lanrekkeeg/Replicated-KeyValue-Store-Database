@@ -1,0 +1,85 @@
+
+import multiprocessing
+
+#import global_conf as glob_var
+import logging
+from util import *
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('test')
+from datetime import datetime
+import time
+from broad_multi_cast import *
+from bully_election import Election
+from fault_tolerant import recv_ping
+
+class Startup_Routine(object):
+    def __init__(self,id,sqn_no, is_alive):
+        '''
+            1. check for the leader
+            2. if there is leader, then check if it is legal leader
+            3. if not legal leader then start the election
+            
+            if not self.find_leader():
+                start the election process
+            else if self.find_leader():
+                check node id, if smaller then bully and start the election
+        '''
+        self.is_alive = is_alive
+        self.sqn_no = sqn_no
+        self.multicast_send = MulticastSend(id)
+        self.multicast_rec = MulticastRec(id)    
+        self.start_rotune()
+        
+    
+    def close_sock(self):
+        """
+        close both sender and rec
+        """
+        self.multicast_send.sock.close()
+        self.multicast_rec.sock.close()
+        
+    def wait_for_reply(self):
+        """
+        collect all sqn number within 10 sec time window
+        """
+        ts_now = datetime.datetime.now()
+        ts_new = datetime.datetime.now()
+        sqn_list = []
+        while (ts_new-ts_now).total_seconds()<=10:
+            ts_new = datetime.datetime.now()
+            data, addr= self.multicast_rec.sock.recvfrom(1024)
+            try:
+                data = data.decode()
+                data = json.loads(data)
+                if data.get('oper', None) == "response":
+                    if data['message'].get("sqn_no",None) is not None:
+                        sqn_list.append((data['nodeID'],data['messsage']['sqn_no']))
+                        
+            except Exception as exp:
+                logger.error("In response, Got {}".format(exp))
+        return sqn_list
+        
+    def start_routine(self):
+        """
+        1. send broadcasr
+        2. collect all latest sequence number
+        """
+        logger.info("Startup Routine Started .....")
+        message = {"nodeID":self.id,"oper":"status","message":{"status":"sqn_no"}}
+        self.multicast_send.broadcast_message(message)
+        sqn_list = self.wait_for_reply()
+        # local sqn number
+        if len(sqn_list) == 0:
+            # i am only alive, start the process
+            self.close_sock()
+            return
+        else:
+            sorted_by_sqn = sorted(sqn_list, key=lambda tup: tup[1],reverse=True)
+            message = {"requested_replica":sorted_by_sqn[0][0],"oper":"recovery","message":{"oper":"recovery","from_sqn":self.sqn_no.value}}
+            self.multicast_send.broadcast_message(message)
+            self.close_sock()
+            
+        logger.info("Startup Routine Finished....")
+            
+        

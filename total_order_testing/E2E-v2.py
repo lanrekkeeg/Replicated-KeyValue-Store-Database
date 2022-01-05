@@ -161,7 +161,7 @@ def client_2(sqn, loc,l):
 
             ip, port = get_leader_ip()
             client.connect((ip, port))
-        #time.sleep(10)
+        time.sleep(10)
             
 def get_time():
     """
@@ -169,19 +169,48 @@ def get_time():
     """
     tm = datetime.utcnow().strftime("%m/%d/%Y  %H:%M:%S.%f")
     return tm
+    
 def client_1(sqn, loc,l):
     print("starting client 1")
     
     #
-    message = {"nodeID":"clien_1","oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"8:00","type":"MS"}}}
-    send_message(message,"client1")
-    time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    message = {"nodeID":"clien_1","oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"9:00","type":"MS"}}}
-    send_message(message,"client1")
-    time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    message = {"nodeID":"clien_1","oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"10:00","type":"MS"}}}
-    send_message(message,"client1")
-    #slp = random.uniform(0.1, 0.3)
+    print("Starting basic client...")
+    
+    client  = get_sock()
+    ip, port = get_leader_ip()
+    client.connect((ip, port))
+    print("First connection is made...")
+    while True:
+        message = {"nodeID":"clien_1","oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"8:00","type":"MS"}}}
+        message = json.dumps(message)
+        message = message.encode()
+        try:
+            client.send(message)
+        except socket.error as exp:
+            client.close()
+            print("Exception while sending message error,{}".format(exp))
+            print("Got error while receiving data, error is {}".format(exp))
+            client  = get_sock()
+            ip, port = get_leader_ip()
+            client.connect((ip, port))
+            continue
+        
+        try:
+            data = client.recv(1024)
+            print("message from server:{}".format(data.decode()))
+        #except socket.timeout as exp:
+        #    print("Timeout for socket")
+        #    print("Got error while receiving data, error is {}".format(exp))
+        #    client  = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #    ip, port = get_leader_ip()
+        #    client.connect((ip, port))
+        except socket.error as exp:
+            print("Got error while receiving data, error is {}".format(exp))
+            client  = get_sock()
+
+            ip, port = get_leader_ip()
+            client.connect((ip, port))
+        time.sleep(10)
     #time.sleep(slp)
         
 def response():
