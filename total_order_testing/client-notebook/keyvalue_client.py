@@ -10,10 +10,12 @@ class KeyStore(object):
     def __init__(self):
         """"
         """
+        self.cord_ip = None
+        self.cord_port = None
         self.broad_ip = "192.168.0.255"
         self.broad_port = 37020
         self.client_id = str(uuid.uuid4())
-        # self.establish_connection()
+        self.establish_connection()
         
     
     def establish_connection(self):
@@ -58,7 +60,10 @@ class KeyStore(object):
             data = self.client_conn.recv(1024)
             return data
         except socket.error:
-            raise Exception("Error while reading write response..")
+            print("Connection break with cordinator, Establishing connection...")
+            self.establish_connection()
+        return None
+            #raise Exception("Error while reading write response..")
             
     def create_db_connection(self):
         """
@@ -69,10 +74,11 @@ class KeyStore(object):
         """
         """
         self.check_param(bucket_name,body)
-        message = {"nodeID":self.client_id,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":bucket_name,"content":data}}
+        message = {"nodeID":self.client_id,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":bucket_name,"content":body}}
         self.send_data(message)
         print("Writing data to DB successfulyy")
-        self.recv_data()        
+        data = self.recv_data()       
+        return data
     
     def readbyID(self, bucket_name=None, id=None):
         """
@@ -137,7 +143,7 @@ class KeyStore(object):
         """
         client  = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        client.settimeout(5)
+        client.settimeout(7)
         return client
         
     def test_cordinator_connection(self, ip, port):

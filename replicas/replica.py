@@ -14,7 +14,9 @@ import datetime
 from replica_handler import ReplicaHandler
 from startup_routine import Startup_Routine
 logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger('replica-manager')
+global id
+
+logger = logging.getLogger('replica-manager-'+str(id))
 import json
 
 class Replica(multiprocessing.Process):
@@ -189,6 +191,7 @@ class Replica(multiprocessing.Process):
                 
 
 if __name__ == "__main__":
+
     manager = Manager()
     id = int(sys.argv[1])
     is_ready = manager.Value('i', 0)
@@ -203,6 +206,7 @@ if __name__ == "__main__":
     R_r.start()
     R_s.start()
     R_hand.start()
+    time.sleep(3)
     start_routine = Startup_Routine(id, sqn_no,hold_back_queue, is_ready)
     R_r.join()
     R_s.join()

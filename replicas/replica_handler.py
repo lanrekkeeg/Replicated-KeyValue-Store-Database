@@ -40,12 +40,13 @@ class ReplicaHandler(multiprocessing.Process):
                 data, addr = self.recv_multicast.sock.recvfrom(1024)
                 message = data.decode()
                 message = json.loads(message)
-                #logger.debug("Data receive by handler:{}".format(message))
+                logger.debug("Data receive by handler:{}".format(message))
                 #logger.info("*************message received************") 
                 if message.get("oper",None) == "status":
-                    if message['message'].get("status",None) == "sqn_no" and message['nodeID'] != self.id:
+                    if message['message'].get("status",None) == "sqn_no" and message.get('nodeID', None) != self.id: # and message.get("to",None) == self.id:
                         logger.info("status data is, {}".format(message['message']))
                         self.multicast_sqn(message['nodeID'])
+                        
                 elif message.get("oper",None) == "recovery":
                     if message.get("requested_replica",None) == self.id:
                         """
@@ -54,7 +55,7 @@ class ReplicaHandler(multiprocessing.Process):
                         self.recovery_process(message)
                     
             except Exception as e:
-                logger.error("Got exception while handling incoming data error is, {}".format(str(e)))
+                logger.error("Got exception while handling incoming data, error is, {}".format(str(e)))
     
     def multicast_sqn(self, id): 
         """
@@ -65,7 +66,7 @@ class ReplicaHandler(multiprocessing.Process):
         else:
             sqn = 0
         logger.info("sending sqn number to replica manager: {}".format(id))
-        message = {"nodeID":self.id,"oper": "response","message":{"success":1, "sqn_no":sqn}}
+        message = {"nodeID":self.id, "to":id,"oper": "response","message":{"success":1, "sqn_no":sqn}}
         self.send_multicast.broadcast_message(message)
         
     def recovery_process(self, message):

@@ -55,11 +55,11 @@ class Startup_Routine(object):
                     if data['message'].get("sqn_no",None) is not None:
                         sqn_list.append((data['nodeID'],data['message']['sqn_no']))  
             except socket.error as exp:
-                logger.error("In response, Got {}".format(exp))
+                logger.error("In one of the response, Got {}".format(exp))
             ts_new = datetime.datetime.now()
 
             
-                
+        logger.info("Collected sequence number are: {}".format(sqn_list))
         return sqn_list
     
     def load_hold_back_queu(self):

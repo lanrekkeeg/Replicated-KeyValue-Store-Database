@@ -61,7 +61,7 @@ class CareTakerServer(multiprocessing.Process):
         """
         ts_now = datetime.datetime.now()
         ts_new = datetime.datetime.now()
-        while (ts_new-ts_now).total_seconds()<=10:
+        while (ts_new-ts_now).total_seconds()<=5:
             ts_new = datetime.datetime.now()
             data, addr= self.multicast_rec.sock.recvfrom(1024)
             try:
@@ -85,6 +85,7 @@ class CareTakerServer(multiprocessing.Process):
             try:
                 data = self.client_conn.recv(1024)
                 if not data:
+                    logger.warning("Breaking client socket as connection close from client side")
                     break
             except Exception as exp:
                 logger.info("Closing socket")
@@ -195,5 +196,5 @@ class ClientHandler(multiprocessing.Process):
             p = CareTakerServer(self.id, conn,addr, self.groupView,self.groupViewReplica, self.leaderID, self.Leader, self.isElection, self.participation, self.lock,self.sqn)
             #p.daemon = True
             p.start()
-            p.join()
+            #p.join()
         
