@@ -37,13 +37,18 @@ class Replica(multiprocessing.Process):
             #self.db_object = load_all_buckets()
         
     def run(self):
+    
+        # adding is alive check to avoid reading its own dump
+        while not self.is_ready.value:
+            continue
+            
         if self.switch:
             #response = multiprocessing.Process(target=self.check_response_queu(self.response_queue,))
             #response.start()
             self.check_response_queu()
         else:
             self.receive()
-        
+            
     def send_response(self):
         pass
     
@@ -52,7 +57,6 @@ class Replica(multiprocessing.Process):
         """
         logger.debug("Dumping holdback queue")
         hld_que = self.hold_back_Queue[:]
-        print(self.hold_back_Queue)
         hld_que.append({"sqn_no":self.hold_back_Queue_sqn.value})
         with open('db_hld_queue/hld.data', 'wb') as handle:
             # store the data as binary data stream
@@ -199,7 +203,7 @@ if __name__ == "__main__":
     R_r.start()
     R_s.start()
     R_hand.start()
-    start_routine = Startup_Routine(id, sqn_no, is_ready)
+    start_routine = Startup_Routine(id, sqn_no,hold_back_queue, is_ready)
     R_r.join()
     R_s.join()
     R_hand.join()

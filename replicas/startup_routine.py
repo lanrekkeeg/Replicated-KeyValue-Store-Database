@@ -5,9 +5,10 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('test')
 import datetime
 from broad_multi_cast import *
+import pickle
 
 class Startup_Routine(object):
-    def __init__(self,id,sqn_no, is_alive):
+    def __init__(self,id,sqn_no,hld_back, is_alive):
         '''
             1. check for the leader
             2. if there is leader, then check if it is legal leader
@@ -18,13 +19,17 @@ class Startup_Routine(object):
             else if self.find_leader():
                 check node id, if smaller then bully and start the election
         '''
+        self.hold_back_queue = hld_back
         self.id = id
         self.is_alive = is_alive
         self.sqn_no = sqn_no
         self.multicast_send = MulticastSend(id)
         self.multicast_rec = MulticastRec(id)
         self.multicast_rec.sock.settimeout(10)
+        self.load_hold_back_queu()
+        self.is_alive.value = 1
         self.start_routine()
+        
         
     
     def close_sock(self):
@@ -56,6 +61,26 @@ class Startup_Routine(object):
             
                 
         return sqn_list
+    
+    def load_hold_back_queu(self):
+        """
+        loading holdback queue
+        """
+        logger.info("Loading holdback Queue Dump")
+        hld_que = []
+        try:
+            with open('db_hld_queue/hld.data', 'rb') as handle:
+                # store the data as binary data stream
+                hld_que = pickle.load(handle)
+        except Exception as exp:
+            logger.error("Failed to load hld_que dump..")
+            return 
+        sqn_record = hld_que.pop(-1)
+        self.sqn_no.value = int(sqn_record['sqn_no'])
+        self.hold_back_queue = hld_que
+        logger.info("From hold back queue dump sqn no:{} is loaded".format(self.sqn_no.value))
+        
+        
         
     def start_routine(self):
         """
