@@ -48,6 +48,8 @@ class ReplicaHandler(multiprocessing.Process):
                     self.update_group_view(message)
                 
                 if message.get("oper",None) == "response":
+                    #logger.info(message)
+                    #logger.info("{},{}".format(type(message['to']),type(self.id)))
                     if message['message'].get("sqn_no",None) is not None and message.get("to",None) == self.id:
                         self.update_sqn_no(message)
                     

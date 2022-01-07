@@ -91,10 +91,15 @@ class Startup_Routine(object):
         message = {"nodeID":self.id,"oper":"status","message":{"status":"sqn_no"}}
         self.multicast_send.broadcast_message(message)
         sqn_list = self.wait_for_reply()
+        #logger.info("type",type(sqn_list[0][0]),type(self.id))
         # local sqn number
         if len(sqn_list) == 0:
             # i am only alive, start the process
             logger.info("Receive no reply from any client assuming to be the 1st")
+            self.close_sock()
+            return
+        elif len(sqn_list) == 1 and sqn_list[0][0] == self.id:
+            logger.info("Receive self reply from any client assuming to be the 1st")
             self.close_sock()
             return
         else:

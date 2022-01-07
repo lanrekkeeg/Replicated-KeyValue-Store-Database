@@ -69,26 +69,50 @@ class KeyStore(object):
         """
         """
         pass
-    
+    def decode_data(self,message):
+        """
+        """
+        message = message.decode()
+        message = json.loads(message)
+        return message
+        
     def write(self, bucket_name=None, body=None):
         """
         """
         self.check_param(bucket_name,body)
         message = {"nodeID":self.client_id,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":bucket_name,"content":body}}
         self.send_data(message)
-        print("Writing data to DB successfulyy")
-        data = self.recv_data()       
+        #print("Writing data to DB successfulyy")
+        data = self.recv_data()
+        if data:
+            data = self.decode_data(data)
+            return data
         return data
     
     def readbyID(self, bucket_name=None, id=None):
         """
         """
         self.check_param(bucket_name, id)
+        message = {"nodeID":self.client_id,"oper": "key-value", "message":{"oper-type": "searchbyID", "bucket_name":bucket_name,"content":{"id":id}}}
+        self.send_data(message)
+        data = self.recv_data()
+        if data:
+            data = self.decode_data(data)
+            return data
+        return data
         
     
     def deletebyID(self, bucket_name=None, id=None):
         """
         """
+        self.check_param(bucket_name, id)
+        message = {"nodeID":self.client_id,"oper": "key-value", "message":{"oper-type": "deletebyID", "bucket_name":bucket_name,"content":{"id":id}}}
+        self.send_data(message)
+        data = self.recv_data()
+        if data:
+            data = self.decode_data(data)
+            return data
+        return data
         pass
     
     def updatebyID(self, bucket_name, data, id):

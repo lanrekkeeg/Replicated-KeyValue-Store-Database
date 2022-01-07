@@ -27,9 +27,10 @@ class GroupView(multiprocessing.Process):
     # Override run method
     def run(self):
         logger.debug("Node:{}, Group view process started, broadcasting port and ip".format(id))
+        host = socket.gethostbyname(socket.gethostname())
+
         # Message to be sent to client
         while True:
-            host = socket.gethostbyname(socket.gethostname())
             message = {'oper': 'groupview','nodeID':self.id, 'message':{'host':host,'port':self.port}}
             self.broadcaster.broadcast_message(message)
             time.sleep(0.3)

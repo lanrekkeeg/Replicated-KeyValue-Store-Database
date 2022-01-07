@@ -16,7 +16,7 @@ from startup_routine import Startup_Routine
 logging.basicConfig(level=logging.DEBUG)
 global id
 
-logger = logging.getLogger('replica-manager-'+str(id))
+logger = logging.getLogger("replica-manager")
 import json
 
 class Replica(multiprocessing.Process):
@@ -42,6 +42,7 @@ class Replica(multiprocessing.Process):
     
         # adding is alive check to avoid reading its own dump
         while not self.is_ready.value:
+            time.sleep(1)
             continue
             
         if self.switch:
@@ -70,7 +71,7 @@ class Replica(multiprocessing.Process):
     
     
     def receive(self):
-        logger.info("starting receving process....")
+        logger.info("starting receving process")
         while True:
             data, addr = self.muticast_recv.sock.recvfrom(1024)
             message = data.decode()
@@ -130,14 +131,14 @@ class Replica(multiprocessing.Process):
         
         response = {"success":1, "data":None}
             
-        
+        logger.debug("response init is :{}".format(response))
+
         if db_operation == "write":
             resp = add_record(db_buckets[db_bucket],db_content)
         elif db_operation == "deletebyID":
-            resp = delete_by_id(db_buckets[db_bucket], db_content)
+            resp = delete_by_id(db_buckets[db_bucket], db_content['id'])
         elif db_operation == "searchbyID":
-            resp = search_by_id(db_buckets[db_bucket],db_content)
-            pass
+            resp = search_by_id(db_buckets[db_bucket],db_content['id'])
         elif db_operation == "searchbyQuery":
             pass
         elif db_operation == "updatebyID":
@@ -149,13 +150,16 @@ class Replica(multiprocessing.Process):
             
         
         # sending record back to client
+        
         response["data"] = resp
+        logger.debug("response is :{}".format(response))
         message['message'] = response
         message['oper'] = "response"
         message['sqn_no'] = original_message['message']['sqn_no']
         message['nodeID'] = original_message['nodeID']
         self.response_queue.append(message)
-        logger.info("Response queue is:{}".format(self.response_queue))
+        logger.debug("response is :{}".format(message))
+        #logger.debug("Response queue is:{}".format(self.response_queue))
         self.write_to_disk(original_message)
         return
         # add data

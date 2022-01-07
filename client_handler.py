@@ -41,13 +41,21 @@ class CareTakerServer(multiprocessing.Process):
         """
         """
         logger.info("Sending request for sqn number.....")
-        while self.sqn.value == -1:
+        ts_now = datetime.datetime.now()
+        ts_new = datetime.datetime.now()
+        while (ts_new-ts_now).total_seconds() <= 5 and self.sqn.value == -1:
             """
             check with replica
             """
             message = {"nodeID":self.id,"oper":"status","message":{"status":"sqn_no"}}
             self.multicast_send.broadcast_message(message)
+            ts_new = datetime.datetime.now()
             time.sleep(0.3)
+        
+        if self.sqn.value == -1:
+            logger.error("Fail to communicate with replica")
+            return -1
+        
         logger.info("Sending sqn number to handler")
         #self.multicast_send.sock.close()
         self.lock.acquire()
@@ -124,23 +132,30 @@ class CareTakerServer(multiprocessing.Process):
                 
                     #################### MAIN LOGIC ####################
                 sqn = self.get_sqn_number()
-                logger.info("sqn_number is: {}".format(sqn))
-                time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-                #message = {"id":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"8:00","type":"MS"}, "sqn_no":sqn_}}
-                data['nodeID'] = self.id
-                data['send_time'] = time_
-                data['message']['sqn_no'] = sqn
-                logger.info("Sending message to replica manager...")
-                self.multicast_send.broadcast_message(data)
-                logger.info("Waiting for response...")
-                message = self.check_response(sqn)
-                #logger.debug("Data from client: {}".format(data))
-                #message = {"nodeID":self.id, "oper": "key-valye","message":{"response":"hell wordl from "+ str(self.id)}}
-                #message = json.dumps(message)
-                #message = str.encode(message)
-                message = encode_message(message)
-                self.client_conn.send(message)
-                logger.info("Sending Response to client....")
+                if sqn == -1:
+                    message = {"nodeID":  self.id, "oper": "response", "message": {"success": 0, "data": "Failed to perform request"}}
+                    message = encode_message(message)
+                    self.client_conn.send(message)
+                
+                else:
+
+                    logger.info("sqn_number is: {}".format(sqn))
+                    time_ = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+                    #message = {"id":"clien_1","send_time": time_,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":"db","content":{"class":"8:00","type":"MS"}, "sqn_no":sqn_}}
+                    data['nodeID'] = self.id
+                    data['send_time'] = time_
+                    data['message']['sqn_no'] = sqn
+                    logger.info("Sending message to replica manager...")
+                    self.multicast_send.broadcast_message(data)
+                    logger.info("Waiting for response...")
+                    message = self.check_response(sqn)
+                    #logger.debug("Data from client: {}".format(data))
+                    #message = {"nodeID":self.id, "oper": "key-valye","message":{"response":"hell wordl from "+ str(self.id)}}
+                    #message = json.dumps(message)
+                    #message = str.encode(message)
+                    message = encode_message(message)
+                    self.client_conn.send(message)
+                    logger.info("Sending Response to client....")
             else:
                 self.client_conn.close()
                 return

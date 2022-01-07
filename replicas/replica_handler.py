@@ -43,7 +43,7 @@ class ReplicaHandler(multiprocessing.Process):
                 logger.debug("Data receive by handler:{}".format(message))
                 #logger.info("*************message received************") 
                 if message.get("oper",None) == "status":
-                    if message['message'].get("status",None) == "sqn_no" and message.get('nodeID', None) != self.id: # and message.get("to",None) == self.id:
+                    if message['message'].get("status",None) == "sqn_no": # and message.get("to",None) == self.id:
                         logger.info("status data is, {}".format(message['message']))
                         self.multicast_sqn(message['nodeID'])
                         
