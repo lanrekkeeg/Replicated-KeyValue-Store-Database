@@ -43,3 +43,14 @@ def ignore_cordinatro(message):
         return True
     else:
         return False
+
+def get_ip():
+    """
+    return ip address
+    """
+    import socket
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(('8.8.8.8', 1))  # connect() for UDP doesn't send packets
+    router_ip_addr = s.getsockname()[0]
+    return router_ip_addr

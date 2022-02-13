@@ -31,7 +31,7 @@ class GroupView(multiprocessing.Process):
         # Message to be sent to client
         host = None
         while 1:
-            host = socket.gethostbyname(socket.gethostname())
+            host = get_ip()#socket.gethostbyname(socket.gethostname())
             if host != '127.0.0.1' or host != 'localhost':
                 break
             

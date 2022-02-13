@@ -2,6 +2,7 @@ import logging
 from conf import *
 import socket
 import json
+from util import *
 
 class MulticastSend(object):
     def __init__(self, id):
@@ -36,15 +37,17 @@ class MulticastRec(object):
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32) 
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
   
+  
+        host = get_ip()#socket.gethostbyname(socket.gethostname())
+        self.sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(host))
+        self.sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, 
+                     socket.inet_aton(self.MCAST_GRP) + socket.inet_aton(host))
         import platform
         # otherwise very difficult to run one copy in windows and other in macbook
         if platform.system() == 'Windows':
             self.sock.bind(('', self.MCAST_PORT))
         else:
             self.sock.bind((MCAST_GRP,MCAST_PORT))
-        host = socket.gethostbyname(socket.gethostname())
-        self.sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(host))
-        self.sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, 
-                     socket.inet_aton(self.MCAST_GRP) + socket.inet_aton(host))
+        
         print("Multicast rec object is created...")
 

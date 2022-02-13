@@ -110,7 +110,6 @@ class CareTakerServer(multiprocessing.Process):
                 logger.error("Exception in sqn allocation process,{}".format(exp))
             time.sleep(0.01)
         
-        
     def get_sqn_number(self):
         """
         """

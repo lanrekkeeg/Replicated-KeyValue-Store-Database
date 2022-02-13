@@ -44,7 +44,7 @@ class BroadcastSender:
         
 class BroadcastRecev:
     def __init__(self):
-        self.host = socket.gethostbyname(socket.gethostname())
+        self.host = get_ip()#socket.gethostbyname(socket.gethostname())
         self.broad_cast_receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) # UDP
         self.broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 

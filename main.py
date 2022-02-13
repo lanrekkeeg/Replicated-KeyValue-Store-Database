@@ -44,7 +44,7 @@ if __name__ == '__main__':
     port = int(sys.argv[2])
     
     broad = Broadcaster(id, groupView, leaderID, Leader, isElection, participation, port, lock_rep, sqn)
-    clients = ClientHandler(id,socket.gethostbyname(socket.gethostname()), port, program_order,groupView,groupViewReplica, leaderID, Leader, isElection,participation,lock_rep,sqn)
+    clients = ClientHandler(id,get_ip(), port, program_order,groupView,groupViewReplica, leaderID, Leader, isElection,participation,lock_rep,sqn)
     view = GroupView(id,port,groupView, leaderID, Leader)
     replicaHandler = ReplicaHandler(id,Leader,groupViewReplica,sqn,port,lock_rep)
     #replicaHandler.daemon = True

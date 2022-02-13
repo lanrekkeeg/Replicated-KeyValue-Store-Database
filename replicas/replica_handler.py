@@ -10,13 +10,14 @@ import json
 from util import *
 from database_Oper import *
 from broadcast import *
+from util import *
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('test')
 
 class ReplicaHandler(multiprocessing.Process):
     def __init__(self, id,isReady,lock, sqn):
         super(ReplicaHandler, self).__init__()
-        self.host = socket.gethostbyname(socket.gethostname())
+        self.host = get_ip() #socket.gethostbyname(socket.gethostname())
         self.isReady = isReady
         self.id = id
         self.lock = lock

@@ -11,8 +11,6 @@ import platform
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('test')
 
-#groupview = {1:'127.0.0.1:9001',2:'127.0.0.1:9002',3:'127.0.0.1:9004',4:'127.0.0.1:9005',5:'127.0.0.1:9006',6:'127.0.0.1:9007'}
-
 import socket
 import time
 

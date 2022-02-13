@@ -32,7 +32,7 @@ class GroupView(multiprocessing.Process):
         logger.debug("Node:{}, Group view process started, broadcasting port and ip".format(id))
         # Message to be sent to client
         while True:
-            host = socket.gethostbyname(socket.gethostname())
+            host = get_ip()#socket.gethostbyname(socket.gethostname())
             if host == '127.0.0.1':
                 continue
             message = {"multicast":True,'oper': 'groupview','nodeID':self.id, 'message':{'host':host,'port':self.port}}

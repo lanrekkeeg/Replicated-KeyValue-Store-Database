@@ -16,7 +16,7 @@ class ReplicaHandler(multiprocessing.Process):
     def __init__(self, id,isLeader,groupview, sqn, port,lock):
         super(ReplicaHandler, self).__init__()
         self.port = port
-        self.host = socket.gethostbyname(socket.gethostname())
+        self.host =  get_ip()#socket.gethostbyname(socket.gethostname())
         self.isLeader = isLeader
         self.groupView = groupview
         self.sqn_no = sqn

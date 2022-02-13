@@ -3,7 +3,7 @@ from conf import *
 import socket
 import json
 import platform
-
+from util import *
 
 class MulticastSend(object):
     def __init__(self, id):
@@ -44,7 +44,7 @@ class MulticastRec(object):
         else:
             self.sock.bind((MCAST_GRP,MCAST_PORT))
             
-        host = socket.gethostbyname(socket.gethostname())
+        host = get_ip()#socket.gethostbyname(socket.gethostname())
         self.sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(host))
         self.sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, 
                      socket.inet_aton(self.MCAST_GRP) + socket.inet_aton(host))
