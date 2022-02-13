@@ -4,7 +4,7 @@ import socket
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # Server application IP address and port
-server_address = '127.0.0.1'
+server_address = '192.168.0.102'
 server_port = 10001
 
 # Buffer size

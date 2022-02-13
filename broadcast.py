@@ -41,7 +41,27 @@ class BroadcastSender:
         #logger.debug("Message broadcasted ...")
 
         
-    
+class BroadcastRecev:
+    def __init__(self):
+        self.host = socket.gethostbyname(socket.gethostname())
+        self.broad_cast_receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) # UDP
+        self.broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+        if platform.system() != 'Windows':
+            self.broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        self.broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        self.broad_cast_sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        
+        #self.broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        # Enable broadcasting mode
+        
+        # change
+        self.broad_cast_receiver.bind(("", 37020))
+        
+
+
+
 class Broadcaster(multiprocessing.Process):
     def __init__(self, id, groupView, leaderID, Leader, isElection, participation, port, lock, sqn):
         super(Broadcaster, self).__init__()
