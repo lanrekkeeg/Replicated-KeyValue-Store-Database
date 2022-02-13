@@ -75,7 +75,7 @@ class Startup_Routine(object):
         logger.info("Loading holdback Queue Dump")
         hld_que = []
         try:
-            with open('db_hld_queue/hld.data', 'rb') as handle:
+            with open('db_hld_queue/hld.data', 'r+b') as handle:
                 # store the data as binary data stream
                 hld_que = pickle.load(handle)
         except Exception as exp:
