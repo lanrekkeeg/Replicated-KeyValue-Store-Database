@@ -13,6 +13,7 @@ import pickle
 import datetime
 from replica_handler import ReplicaHandler
 from startup_routine import Startup_Routine
+from broadcast import *
 logging.basicConfig(level=logging.DEBUG)
 global id
 
@@ -31,6 +32,9 @@ class Replica(multiprocessing.Process):
         self.is_ready = is_ready
         self.muticast_send = MulticastSend(self.id)
         self.muticast_recv = MulticastRec(self.id)
+        
+        self.send_broadcast = BroadcastSender(self.id)
+        self.recv_broadcast = BroadcastRecev()
         self.switch = switch
         #from database_Oper import db_buckets
         if not self.switch:
@@ -73,19 +77,20 @@ class Replica(multiprocessing.Process):
     def receive(self):
         logger.info("starting receving process")
         while True:
-            data, addr = self.muticast_recv.sock.recvfrom(1024)
+            data, addr = self.recv_broadcast.broad_cast_receiver.recvfrom(1024)
             message = data.decode()
             message = json.loads(message)
             #logger.debug("Received request, adding into hold_back_queu...")
-            if message['oper'] == "key-value":
-                message['timestamp'] = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-
-                logger.debug("Adding record in hold back queue")
-                add_record(cordinator_logs['logs'], message )
-                # discard duplicates e.g curr_sqn = 12, upcoming is 11 then we need to discard it
-                self.hold_back_Queue.append(message)
-                self.dump_hold_back_queue()
-                self.deliver()
+            if check_multicast(message):
+                if message['oper'] == "key-value": # need to check
+                    message['timestamp'] = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    
+                    logger.debug("Adding record in hold back queue")
+                    add_record(cordinator_logs['logs'], message )
+                    # discard duplicates e.g curr_sqn = 12, upcoming is 11 then we need to discard it
+                    self.hold_back_Queue.append(message)
+                    self.dump_hold_back_queue()
+                    self.deliver()
     
     def deliver(self):
         popping_index = []
@@ -157,6 +162,8 @@ class Replica(multiprocessing.Process):
         message['oper'] = "response"
         message['sqn_no'] = original_message['message']['sqn_no']
         message['nodeID'] = original_message['nodeID']
+        message['multicast'] = True
+        
         self.response_queue.append(message)
         logger.debug("response is :{}".format(message))
         #logger.debug("Response queue is:{}".format(self.response_queue))
@@ -182,7 +189,7 @@ class Replica(multiprocessing.Process):
         while True:
             try:
                 msg = self.response_queue.pop()
-                self.muticast_send.broadcast_message(msg)
+                self.send_broadcast.broadcast_message(msg)
                 logger.info("sending response back to {}".format(msg['nodeID']))
             except Exception as exp:
                 #logger.info("Got error while sending response to client..., {}".format(exp))

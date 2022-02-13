@@ -9,6 +9,7 @@ from util import *
 import json
 import datetime
 from broad_multi_cast import MulticastSend, MulticastRec
+from broadcast import *
 import time
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('test')
@@ -33,6 +34,10 @@ class CareTakerServer(multiprocessing.Process):
         self.id = id
         self.multicast_send = MulticastSend(self.id)
         self.multicast_rec = MulticastRec(self.id)
+        
+        self.broad_send = BroadcastSender(self.id)
+        self.broad_recv = BroadcastRecev()
+        
         self.lock = lock
         self.sqn = sqn
     # Override run method
@@ -116,8 +121,8 @@ class CareTakerServer(multiprocessing.Process):
             """
             check with replica
             """
-            message = {"nodeID":self.id,"oper":"status","message":{"status":"sqn_no"}}
-            self.multicast_send.broadcast_message(message)
+            message = {"nodeID":self.id, "replica_message":"1","oper":"status","message":{"status":"sqn_no"}}
+            self.broad_send.broadcast_message(message)
             ts_new = datetime.datetime.now()
             time.sleep(0.3)
         
@@ -140,15 +145,16 @@ class CareTakerServer(multiprocessing.Process):
         ts_new = datetime.datetime.now()
         while (ts_new-ts_now).total_seconds()<=5:
             ts_new = datetime.datetime.now()
-            data, addr= self.multicast_rec.sock.recvfrom(1024)
+            data, addr= self.broad_recv.sock.recvfrom(1024)
             try:
                 data = data.decode()
                 data = json.loads(data)
-                if data.get('oper', None) == "response":
-                    if data.get("sqn_no",None) is not None:
-                        if data.get("nodeID",None) == self.id and data.get("sqn_no") == sqn:
-                            logger.info("sending response to client")
-                            return data
+                if check_multicast(data):
+                    if data.get('oper', None) == "response":
+                        if data.get("sqn_no",None) is not None:
+                            if data.get("nodeID",None) == self.id and data.get("sqn_no") == sqn:
+                                logger.info("sending response to client")
+                                return data
             except Exception as exp:
                 logger.error("In response, Got {}".format(exp))
         message = {"nodeID":  self.id, "oper": "response", "message": {"success": 0, "data": "Failed to perform request"}}
@@ -200,7 +206,7 @@ class CareTakerServer(multiprocessing.Process):
                     
                 #################### MAIN LOGIC ####################
 
-            elif self.Leader.value:
+            elif self.Leader.value and check_multicast(data): # ignore message mixing
                 
                 
                 sqn = self.get_sqn_number()
@@ -218,7 +224,7 @@ class CareTakerServer(multiprocessing.Process):
                     data['send_time'] = time_
                     data['message']['sqn_no'] = sqn
                     logger.info("Sending message to replica manager...")
-                    self.multicast_send.broadcast_message(data)
+                    self.broad_send.broadcast_message(data)
                     logger.info("Waiting for response...")
                     message = self.check_response(sqn)
                     #logger.debug("Data from client: {}".format(data))

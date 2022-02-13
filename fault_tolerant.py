@@ -1,7 +1,6 @@
 import socket
 import multiprocessing
 from multiprocessing import Manager
-from replica_handler import ReplicaHandler
 import sys
 #import global_conf as glob_var
 import logging

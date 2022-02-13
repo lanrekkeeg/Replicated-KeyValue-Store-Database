@@ -6,6 +6,7 @@ logger = logging.getLogger('test')
 import datetime
 from broad_multi_cast import *
 import pickle
+from broadcast import *
 
 class Startup_Routine(object):
     def __init__(self,id,sqn_no,hld_back, is_alive):
@@ -25,6 +26,10 @@ class Startup_Routine(object):
         self.sqn_no = sqn_no
         self.multicast_send = MulticastSend(id)
         self.multicast_rec = MulticastRec(id)
+        
+        self.send_broadcast = BroadcastSender(self.id)
+        self.recv_broadcast = BroadcastRecev()
+        
         self.multicast_rec.sock.settimeout(10)
         self.load_hold_back_queu()
         self.is_alive.value = 1
@@ -48,12 +53,13 @@ class Startup_Routine(object):
         sqn_list = []
         while (ts_new-ts_now).total_seconds()<=10:
             try:
-                data, addr= self.multicast_rec.sock.recvfrom(1024)
+                data, addr= self.recv_broadcast.broad_cast_receiver.recvfrom(1024)
                 data = data.decode()
                 data = json.loads(data)
-                if data.get('oper', None) == "response":
-                    if data['message'].get("sqn_no",None) is not None:
-                        sqn_list.append((data['nodeID'],data['message']['sqn_no']))  
+                if check_multicast(data):
+                    if data.get('oper', None) == "response":
+                        if data['message'].get("sqn_no",None) is not None:
+                            sqn_list.append((data['nodeID'],data['message']['sqn_no']))  
             except socket.error as exp:
                 logger.error("In one of the response, Got {}".format(exp))
             ts_new = datetime.datetime.now()
@@ -88,8 +94,8 @@ class Startup_Routine(object):
         2. collect all latest sequence number
         """
         logger.info("Startup Routine Started .....")
-        message = {"nodeID":self.id,"oper":"status","message":{"status":"sqn_no"}}
-        self.multicast_send.broadcast_message(message)
+        message = {"multicast":True,"nodeID":self.id,"oper":"status","message":{"status":"sqn_no"}}
+        self.send_broadcast.broadcast_message(message)
         sqn_list = self.wait_for_reply()
         #logger.info("type",type(sqn_list[0][0]),type(self.id))
         # local sqn number
@@ -104,8 +110,8 @@ class Startup_Routine(object):
             return
         else:
             sorted_by_sqn = sorted(sqn_list, key=lambda tup: tup[1],reverse=True)
-            message = {"requested_replica":sorted_by_sqn[0][0],"oper":"recovery","message":{"oper":"recovery","from_sqn":self.sqn_no.value}}
-            self.multicast_send.broadcast_message(message)
+            message = {"multicast":True,"requested_replica":sorted_by_sqn[0][0],"oper":"recovery","message":{"oper":"recovery","from_sqn":self.sqn_no.value}}
+            self.send_broadcast.broadcast_message(message)
             self.close_sock()
             
         logger.info("Startup Routine Finished....")

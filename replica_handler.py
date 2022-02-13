@@ -8,7 +8,7 @@ import logging
 from util import *
 import json
 import datetime
-
+from broadcast import *
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('test')
 
@@ -24,7 +24,8 @@ class ReplicaHandler(multiprocessing.Process):
         self.lock = lock
         self.send_multicast = MulticastSend(self.id)
         self.recv_multicast = MulticastRec(self.id)
-
+        self.send_broadcast = BroadcastSender(self.id)
+        self.recv_broadcast = BroadcastRecev()
         
         
     # Override run method
@@ -40,21 +41,20 @@ class ReplicaHandler(multiprocessing.Process):
         logger.info("Replication handler started.....")
         while True:
             try:
-                data, addr = self.recv_multicast.sock.recvfrom(1024)
+                data, addr = self.recv_broadcast.broad_cast_receiver.recvfrom(1024)
                 message = data.decode()
                 message = json.loads(message)
                 #logger.info("*************message received************")
-                if message.get('oper',None) == "groupView":
-                    self.update_group_view(message)
-                
-                if message.get("oper",None) == "response":
-                    #logger.info(message)
-                    #logger.info("{},{}".format(type(message['to']),type(self.id)))
-                    if message['message'].get("sqn_no",None) is not None and message.get("to",None) == self.id:
-                        self.update_sqn_no(message)
+                if check_multicast(message):
+                    if message.get('oper',None) == "groupView":
+                        self.update_group_view(message)
                     
-                        
-
+                    if message.get("oper",None) == "response":
+                        #logger.info(message)
+                        #logger.info("{},{}".format(type(message['to']),type(self.id)))
+                        if message['message'].get("sqn_no",None) is not None and message.get("to",None) == self.id:
+                            self.update_sqn_no(message)
+                    
             except Exception as e:
                 logger.error("Got exception while handling incoming data error is, {}".format(str(e)))
     
@@ -72,15 +72,15 @@ class ReplicaHandler(multiprocessing.Process):
         """
         """
         logger.info("sending sqn number to replica manager: {}".format(id))
-        message = {"nodeID":self.id,"oper": "status","message":{"success":1, "sqn":self.sqn.value}}
-        self.send_multicast.broadcast_message(message)
+        message = {"multicast":True,"nodeID":self.id,"oper": "status","message":{"success":1, "sqn":self.sqn.value}}
+        self.send_broadcast.broadcast_message(message)
         
     def multicast_leader(self):
         """
         """
         if self.isLeader.value:
-            message = {"oper":"response","message":{"leader":self.id,"host":self.host,"port":self.port}}
-            self.send_multicast.broadcast_message(message)
+            message = {"multicast":True,"oper":"response","message":{"leader":self.id,"host":self.host,"port":self.port}}
+            self.send_broadcast.broadcast_message(message)
         
 
     def update_group_view(self, data):

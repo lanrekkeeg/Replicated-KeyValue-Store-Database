@@ -9,7 +9,6 @@ import logging
 from util import *
 import json
 import datetime
-from fault_tolerant import *
 import platform
 
 logging.basicConfig(level=logging.DEBUG)
@@ -51,6 +50,11 @@ class BroadcastRecev:
         if platform.system() != 'Windows':
             self.broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         self.broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        
+        #self.broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        # Enable broadcasting mode
+        
         # change
         self.broad_cast_receiver.bind(("", 37020))
         
