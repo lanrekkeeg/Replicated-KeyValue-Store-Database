@@ -80,7 +80,7 @@ class KeyStore(object):
         """
         """
         self.check_param(bucket_name,body)
-        message = {"nodeID":self.client_id,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":bucket_name,"content":body}}
+        message = {"multicast":True,"nodeID":self.client_id,"oper": "key-value", "message":{"oper-type": "write", "bucket_name":bucket_name,"content":body}}
         self.send_data(message)
         #print("Writing data to DB successfulyy")
         data = self.recv_data()
@@ -93,7 +93,7 @@ class KeyStore(object):
         """
         """
         self.check_param(bucket_name, id)
-        message = {"nodeID":self.client_id,"oper": "key-value", "message":{"oper-type": "searchbyID", "bucket_name":bucket_name,"content":{"id":id}}}
+        message = {"multicast":True,"nodeID":self.client_id,"oper": "key-value", "message":{"oper-type": "searchbyID", "bucket_name":bucket_name,"content":{"id":id}}}
         self.send_data(message)
         data = self.recv_data()
         if data:
@@ -106,7 +106,7 @@ class KeyStore(object):
         """
         """
         self.check_param(bucket_name, id)
-        message = {"nodeID":self.client_id,"oper": "key-value", "message":{"oper-type": "deletebyID", "bucket_name":bucket_name,"content":{"id":id}}}
+        message = {"multicast":True,"nodeID":self.client_id,"oper": "key-value", "message":{"oper-type": "deletebyID", "bucket_name":bucket_name,"content":{"id":id}}}
         self.send_data(message)
         data = self.recv_data()
         if data:
@@ -145,14 +145,15 @@ class KeyStore(object):
 
             message = data.decode()
             message = json.loads(message)
-            if message.get("oper",None) == "response":
-                print(message)
-    
-                if message['message'].get('leader', None) is not None:
-                    print("Leader data is {}".format(message['message']))
-                    if self.test_cordinator_connection(message['message']['host'], int(message['message']['port'])):
-                        print("Returning leader ip to client")
-                        return message['message']['host'],message['message']['port']
+            if message.get('multicast',None) is None:
+                if message.get("oper",None) == "response":
+                    print(message)
+        
+                    if message['message'].get('leader', None) is not None:
+                        print("Leader data is {}".format(message['message']))
+                        if self.test_cordinator_connection(message['message']['host'], int(message['message']['port'])):
+                            print("Returning leader ip to client")
+                            return message['message']['host'],message['message']['port']
             
             ts_new = datetime.datetime.now()
             broad.close()

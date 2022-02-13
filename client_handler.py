@@ -121,7 +121,7 @@ class CareTakerServer(multiprocessing.Process):
             """
             check with replica
             """
-            message = {"nodeID":self.id, "replica_message":"1","oper":"status","message":{"status":"sqn_no"}}
+            message = {"multicast":True, "nodeID":self.id, "replica_message":"1","oper":"status","message":{"status":"sqn_no"}}
             self.broad_send.broadcast_message(message)
             ts_new = datetime.datetime.now()
             time.sleep(0.3)
@@ -145,7 +145,7 @@ class CareTakerServer(multiprocessing.Process):
         ts_new = datetime.datetime.now()
         while (ts_new-ts_now).total_seconds()<=5:
             ts_new = datetime.datetime.now()
-            data, addr= self.broad_recv.sock.recvfrom(1024)
+            data, addr= self.broad_recv.broad_cast_receiver.recvfrom(1024)
             try:
                 data = data.decode()
                 data = json.loads(data)

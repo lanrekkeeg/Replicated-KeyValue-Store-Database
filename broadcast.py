@@ -80,8 +80,8 @@ class Broadcaster(multiprocessing.Process):
         self.broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         self.broad_cast_sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        
-        #self.broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        self.broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self.broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # Enable broadcasting mode
         
         # change

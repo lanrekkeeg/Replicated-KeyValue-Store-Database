@@ -84,7 +84,9 @@ class Broadcaster(multiprocessing.Process):
         self.broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         self.broad_cast_sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        
+        self.broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self.broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         #self.broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         # Enable broadcasting mode
         
@@ -119,9 +121,9 @@ class Broadcaster(multiprocessing.Process):
                 # reject multicast  messages
                 if check_multicast(data):
                     continue
-                # itself id will be updated, won't cause issue if leader itself update itself
-                if data.get("oper",None) == "response":
-                    #logger.info("Node:{}, reponse is recieved for status, updating leaderID:{}".format(self.id,data['message']['leader']))
+                # itself id will be updated, won't cause issue if leader itself update itself, need to check if it election message
+                if data.get("oper",None) == "response" and data['message'].get('leader',None) is not None:
+                    logger.info("Node:{}, reponse is recieved for status, updating leaderID:{}".format(self.id,data['message']['leader']))
                     message = data['message']
                     self.leaderID.value = int(message['leader'])
                     
