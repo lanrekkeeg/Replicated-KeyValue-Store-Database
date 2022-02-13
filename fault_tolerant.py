@@ -29,6 +29,8 @@ def recv_ping(id,port, broad_caster, groupView, leaderID, Leader, participation,
     logger.info("XXXXXXXXXXXXXXXXX Starting Ping Service XXXXXXXXXXXXXXXX")
 
     broad_cast_receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) # UDP
+    broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
     if platform.system() != 'Windows':
         broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     #broad_cast_sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -37,7 +39,6 @@ def recv_ping(id,port, broad_caster, groupView, leaderID, Leader, participation,
     #broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     broad_cast_receiver.bind(("", port))
     last_time = datetime.datetime.now() 
     while not isElection.value:
