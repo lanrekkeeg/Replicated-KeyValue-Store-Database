@@ -19,9 +19,10 @@ import socket
 from bully_election import Election
 
 class CareTakerServer(multiprocessing.Process):
-    def __init__(self, id, client_conn, client_addr, groupView, groupViewReplica, leaderID, Leader, isElection, participation, lock,sqn):
+    def __init__(self, id, client_conn, client_addr,program_order, groupView, groupViewReplica, leaderID, Leader, isElection, participation, lock,sqn):
         super(CareTakerServer, self).__init__()
         self.groupViewReplica = groupViewReplica
+        self.program_order = program_order
         self.groupView = groupView
         self.leaderID = leaderID
         self.Leader = Leader
@@ -36,11 +37,79 @@ class CareTakerServer(multiprocessing.Process):
         self.sqn = sqn
     # Override run method
     
+    # not use  because of python multiprocessing share object synchronization
+    def get_sqn_for_program_order(self, client_uuid):
+        """
+        return sqn number 
+        """
+        while not self.program_order['order']['status']:
+            time.sleep(0.00005)
+        
+        self.lock.acquire()
+        order = self.program_order['order']
+        sqn = order[client_uuid]['sqn']
+        order.pop(client_uuid)
+        self.lock.release()
+        return sqn
+            
+    # not use  because of python multiprocessing share object synchronization
+    def add_sqn_request_to_queu(self,client_uuid):
+        """
+        """
+        self.program_order.acquire()
+        order_ = self.program_order['order']
+        if client_uuid in order_.keys():
+            logger.error("client id already exist in queue...")
+            self.program_order.release()
+            return 0
+        order_[client_uuid] = {'status':False,'sqn':None}
+        self.program_order['order'] = order_
+        self.program_order.release()
+        return 1
+        
+    # not use  because of python multiprocessing share object synchronization # seperate process 
+    def allocate_sqn_via_program_order(self):
+        """
+        allocating sqn number to client by respecting program order
+        """
+        logger.info("Sending request for sqn number, if it is new leader .....")
+        ts_now = datetime.datetime.now()
+        ts_new = datetime.datetime.now()
+        while (ts_new-ts_now).total_seconds() <= 5 and self.sqn.value == -1:
+            """
+            check with replica
+            """
+            message = {"nodeID":self.id,"oper":"status","message":{"status":"sqn_no"}}
+            self.multicast_send.broadcast_message(message)
+            ts_new = datetime.datetime.now()
+            time.sleep(0.3)
+        
+        if self.sqn.value == -1:
+            logger.error("Fail to communicate with replica")
+            return -1
+        logger.info("Sending sqn number to handler")
+        #self.multicast_send.sock.close()
+        while True:
+            # parse it
+            try:                
+                self.lock.acquire()
+                order = self.program_order['order']
+
+                for key, data in order.items():
+                    order[key]['status'] = True
+                    order[key]['sqn'] = self.sqn.value
+                    self.sqn.value += 1
+                self.program_order['order'] = order
+                self.lock.release()
+            except Exception as exp:
+                logger.error("Exception in sqn allocation process,{}".format(exp))
+            time.sleep(0.01)
+        
         
     def get_sqn_number(self):
         """
         """
-        logger.info("Sending request for sqn number.....")
+        logger.info("Sending request for sqn number, if it is new leader .....")
         ts_now = datetime.datetime.now()
         ts_new = datetime.datetime.now()
         while (ts_new-ts_now).total_seconds() <= 5 and self.sqn.value == -1:
@@ -128,9 +197,12 @@ class CareTakerServer(multiprocessing.Process):
                         elec = Election(self.id, self.groupView, self.leaderID, self.Leader,self.isElection,self.participation,self.lock,self.client_conn)
                         elec.start()
                     self.client_conn.close()
+                    
+                #################### MAIN LOGIC ####################
+
             elif self.Leader.value:
                 
-                    #################### MAIN LOGIC ####################
+                
                 sqn = self.get_sqn_number()
                 if sqn == -1:
                     message = {"nodeID":  self.id, "oper": "response", "message": {"success": 0, "data": "Failed to perform request"}}
@@ -162,9 +234,10 @@ class CareTakerServer(multiprocessing.Process):
     
 class ClientHandler(multiprocessing.Process):
 
-    def __init__(self, id, ip, port, groupView, groupViewReplica,leaderID, Leader, isElection, participation, loc, sqn):
+    def __init__(self, id, ip, port,program_order, groupView, groupViewReplica,leaderID, Leader, isElection, participation, loc, sqn):
         super(ClientHandler, self).__init__()
         self.groupViewReplica=groupViewReplica
+        self.program_order = program_order
         self.groupView = groupView
         self.leaderID = leaderID
         self.Leader = Leader
@@ -208,7 +281,7 @@ class ClientHandler(multiprocessing.Process):
             #data, address = server_socket.recvfrom(buffer_size)
             #print('Received message \'{}\' at {}:{}'.format(data.decode(), address[0], address[1]))
             # Create a server process
-            p = CareTakerServer(self.id, conn,addr, self.groupView,self.groupViewReplica, self.leaderID, self.Leader, self.isElection, self.participation, self.lock,self.sqn)
+            p = CareTakerServer(self.id, conn,addr, self.program_order,self.groupView,self.groupViewReplica, self.leaderID, self.Leader, self.isElection, self.participation, self.lock,self.sqn)
             #p.daemon = True
             p.start()
             #p.join()

@@ -29,6 +29,8 @@ if __name__ == '__main__':
 
     groupView = manager.dict({'groupView':{}})
     groupViewReplica = manager.dict({'groupView':{}})
+    program_order = manager.dict({'order':{}})
+
     sqn = manager.Value('i', -1)
     leaderID =  manager.Value('i', -1)
     Leader = manager.Value('i', 0) # either 0 or 1
@@ -42,7 +44,7 @@ if __name__ == '__main__':
     port = int(sys.argv[2])
     
     broad = Broadcaster(id, groupView, leaderID, Leader, isElection, participation, port, lock_rep, sqn)
-    clients = ClientHandler(id,socket.gethostbyname(socket.gethostname()), port, groupView,groupViewReplica, leaderID, Leader, isElection,participation,lock_rep,sqn)
+    clients = ClientHandler(id,socket.gethostbyname(socket.gethostname()), port, program_order,groupView,groupViewReplica, leaderID, Leader, isElection,participation,lock_rep,sqn)
     view = GroupView(id,port,groupView, leaderID, Leader)
     replicaHandler = ReplicaHandler(id,Leader,groupViewReplica,sqn,port,lock_rep)
     #replicaHandler.daemon = True
