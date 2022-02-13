@@ -8,6 +8,7 @@ import logging
 from util import *
 import json
 import datetime
+import platform
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('test')
 
@@ -28,7 +29,8 @@ def recv_ping(id,port, broad_caster, groupView, leaderID, Leader, participation,
     logger.info("XXXXXXXXXXXXXXXXX Starting Ping Service XXXXXXXXXXXXXXXX")
 
     broad_cast_receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) # UDP
-    broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    if platform.system() != 'Windows':
+        broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     #broad_cast_sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     #broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     # Enable broadcasting mode

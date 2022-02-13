@@ -2,6 +2,8 @@ import logging
 from conf import *
 import socket
 import json
+import platform
+
 
 class MulticastSend(object):
     def __init__(self, id):
@@ -33,7 +35,6 @@ class MulticastRec(object):
             pass
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32) 
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
-        import platform
         # otherwise very difficult to run one copy in windows and other in macbook
         if platform.system() == 'Windows':
             self.sock.bind(('', self.MCAST_PORT))
