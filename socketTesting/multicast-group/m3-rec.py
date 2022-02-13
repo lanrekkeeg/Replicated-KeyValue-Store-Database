@@ -32,3 +32,4 @@ def recv(port=50000, addr="239.192.1.100", buf_size=1024):
                 #s.close()
                 #return data
                 print(data)
+recv()

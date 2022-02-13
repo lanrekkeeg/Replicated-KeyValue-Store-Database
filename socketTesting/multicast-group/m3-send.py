@@ -11,4 +11,4 @@ def send(data, port=50000, addr='239.192.1.100'):
         while True:
                 s.sendto(data, (addr, port))
 
-send()
+send("heel")
