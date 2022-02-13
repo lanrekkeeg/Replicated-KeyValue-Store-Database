@@ -27,6 +27,8 @@ class MulticastRec(object):
         self.MCAST_PORT = MCAST_PORT
         self.id = id    
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
         try:
             self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         except AttributeError:
