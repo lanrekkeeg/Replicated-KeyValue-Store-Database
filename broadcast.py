@@ -64,7 +64,9 @@ class Broadcaster(multiprocessing.Process):
         # Enable broadcasting mode
         self.broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.broad_cast_receiver.bind(("192.168.0.255", 37020))
+        
+        # change
+        self.broad_cast_receiver.bind(("", 37020))
         
         self.health_broadcast = None
         
