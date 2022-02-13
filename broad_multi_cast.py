@@ -35,7 +35,7 @@ class MulticastRec(object):
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
         import platform
         # otherwise very difficult to run one copy in windows and other in macbook
-        if platform.system == 'Windows':
+        if platform.system() == 'Windows':
             self.sock.bind(('', self.MCAST_PORT))
         else:
             self.sock.bind(MCAST_GRP,MCAST_PORT)
