@@ -39,7 +39,7 @@ class MulticastRec(object):
         if platform.system() == 'Windows':
             self.sock.bind(('', self.MCAST_PORT))
         else:
-            self.sock.bind(MCAST_GRP,MCAST_PORT)
+            self.sock.bind((MCAST_GRP,MCAST_PORT))
             
         host = socket.gethostbyname(socket.gethostname())
         self.sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(host))

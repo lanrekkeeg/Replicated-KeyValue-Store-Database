@@ -35,6 +35,8 @@ def recv_ping(id,port, broad_caster, groupView, leaderID, Leader, participation,
     #broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     # Enable broadcasting mode
     #broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
     broad_cast_receiver.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     broad_cast_receiver.bind(("", port))
     last_time = datetime.datetime.now() 
