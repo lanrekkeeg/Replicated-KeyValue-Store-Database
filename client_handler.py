@@ -274,9 +274,11 @@ class ClientHandler(multiprocessing.Process):
         except Exception as exp:
             logger.error("Failed to start the client server, {}".format(exp))
         logger.debug('Node:{},ClientHandler Server Up and Running.... {}:{}'.format(id,server_address, server_port))
-        
-        server_socket.listen()
-        
+        try:
+            server_socket.listen()
+        except Exception as exp:
+            logger.warning("unable to listen to blank users, need to set user")
+            server_socket.listen(50)
         while True:
             # Receive message from client
             try:

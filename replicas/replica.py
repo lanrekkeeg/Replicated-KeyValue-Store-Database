@@ -14,6 +14,8 @@ import datetime
 from replica_handler import ReplicaHandler
 from startup_routine import Startup_Routine
 from broadcast import *
+from  pathlib import Path
+
 logging.basicConfig(level=logging.DEBUG)
 global id
 
@@ -65,6 +67,14 @@ class Replica(multiprocessing.Process):
         logger.debug("Dumping holdback queue")
         hld_que = self.hold_back_Queue[:]
         hld_que.append({"sqn_no":self.hold_back_Queue_sqn.value})
+        
+        try:
+            open('db_hld_queue/hld.data', 'wb')
+        except Exception as exp:
+            logger.info("creating dump file for writing")
+            file = Path('db_hld_queue/hld.data')
+            file.touch(exist_ok=True)
+            
         with open('db_hld_queue/hld.data', 'wb') as handle:
             # store the data as binary data stream
             pickle.dump(hld_que, handle)

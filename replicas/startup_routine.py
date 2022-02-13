@@ -30,7 +30,8 @@ class Startup_Routine(object):
         self.send_broadcast = BroadcastSender(self.id)
         self.recv_broadcast = BroadcastRecev()
         
-        self.multicast_rec.sock.settimeout(10)
+        self.recv_broadcast.broad_cast_receiver.settimeout(10)
+        #self.multicast_rec.sock.settimeout(10)
         self.load_hold_back_queu()
         self.is_alive.value = 1
         self.start_routine()

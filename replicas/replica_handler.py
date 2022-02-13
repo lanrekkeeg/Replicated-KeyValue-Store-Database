@@ -25,9 +25,10 @@ class ReplicaHandler(multiprocessing.Process):
         self.send_multicast = MulticastSend(self.id)
         self.recv_multicast = MulticastRec(self.id)
         
-        self.send_broadcast = BroadcastSender(self.id)
-        self.recv_broadcast = BroadcastRecev()
         
+        self.recv_broadcast = BroadcastRecev()
+        self.send_broadcast = BroadcastSender(self.id)
+
         
 
         
@@ -69,6 +70,7 @@ class ReplicaHandler(multiprocessing.Process):
     def multicast_sqn(self, id): 
         """
         """
+        send_broadcast = BroadcastSender(self.id)
         sorted_history = sort_dict(cordinator_logs['logs'].all())
         if len(sorted_history)!=0:
             sqn = sorted_history[0]['message']['sqn_no']
@@ -76,7 +78,8 @@ class ReplicaHandler(multiprocessing.Process):
             sqn = 0
         logger.info("sending sqn number to replica manager: {}".format(id))
         message = {"multicast":True,"nodeID":self.id, "to":id,"oper": "response","message":{"success":1, "sqn_no":sqn}}
-        self.send_broadcast.broadcast_message(message)
+        send_broadcast.broadcast_message(message)
+        send_broadcast.broad_cast_sender.close()
         
     def recovery_process(self, message):
         """

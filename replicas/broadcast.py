@@ -28,7 +28,8 @@ class BroadcastSender:
         #self.broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         # Enable broadcasting mode
         self.broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-  
+        #self.broad_cast_sender.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEP, 1)
+
     def broadcast_message(self, message):
         """
         convert into byte format
