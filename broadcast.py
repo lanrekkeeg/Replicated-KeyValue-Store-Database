@@ -63,7 +63,7 @@ class Broadcaster(multiprocessing.Process):
         #self.glob_var = glob_
         self.sqn = sqn
         self.lock = lock
-        self.host = socket.gethostbyname(socket.gethostname())
+        self.host = get_ip()#socket.gethostbyname(socket.gethostname())
         self.port = port
         self.groupView = groupView
         self.leaderID = leaderID
