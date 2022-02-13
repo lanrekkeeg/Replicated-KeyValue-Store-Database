@@ -270,7 +270,7 @@ class ClientHandler(multiprocessing.Process):
         # Bind socket to address and port
         try:
             server_socket.bind((server_address, server_port))
-            logger.debug("Starting server at...")
+            logger.debug("Starting server at:{}".format(server_address))
         except Exception as exp:
             logger.error("Failed to start the client server, {}".format(exp))
         logger.debug('Node:{},ClientHandler Server Up and Running.... {}:{}'.format(id,server_address, server_port))
