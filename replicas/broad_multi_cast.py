@@ -34,7 +34,12 @@ class MulticastRec(object):
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32) 
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
   
-        self.sock.bind((self.MCAST_GRP, self.MCAST_PORT))
+        import platform
+        # otherwise very difficult to run one copy in windows and other in macbook
+        if platform.system == 'Windows':
+            self.sock.bind(('', self.MCAST_PORT))
+        else:
+            self.sock.bind(MCAST_GRP,MCAST_PORT)
         host = socket.gethostbyname(socket.gethostname())
         self.sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(host))
         self.sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, 
