@@ -14,6 +14,7 @@ sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
   
   
 host = socket.gethostbyname(socket.gethostname())
+print(host," is")
 sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(host))
 sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, 
                      socket.inet_aton(MCAST_GRP) + socket.inet_aton(host))
