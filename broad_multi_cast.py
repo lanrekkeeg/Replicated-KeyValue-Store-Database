@@ -29,6 +29,8 @@ class MulticastRec(object):
         self.MCAST_PORT = MCAST_PORT
         self.id = id    
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
         try:
             self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         except AttributeError:
@@ -37,6 +39,7 @@ class MulticastRec(object):
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
         # otherwise very difficult to run one copy in windows and other in macbook
         if platform.system() == 'Windows':
+            
             self.sock.bind(('', self.MCAST_PORT))
         else:
             self.sock.bind((MCAST_GRP,MCAST_PORT))
