@@ -2,7 +2,7 @@
 # Guidance:  https://stackoverflow.com/a/1794373
 import socket
 
-MCAST_GRP = '224.1.1.1'
+MCAST_GRP = '224.0.1.0'
 MCAST_PORT = 5007
 MESSAGE = b'Hello, Multicast!'
 
