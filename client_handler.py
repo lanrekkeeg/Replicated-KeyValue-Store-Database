@@ -142,6 +142,7 @@ class CareTakerServer(multiprocessing.Process):
         """
         ts_now = datetime.datetime.now()
         ts_new = datetime.datetime.now()
+        output = []
         while (ts_new-ts_now).total_seconds()<=5:
             ts_new = datetime.datetime.now()
             data, addr= self.broad_recv.broad_cast_receiver.recvfrom(1024)
@@ -153,9 +154,21 @@ class CareTakerServer(multiprocessing.Process):
                         if data.get("sqn_no",None) is not None:
                             if data.get("nodeID",None) == self.id and data.get("sqn_no") == sqn:
                                 logger.info("sending response to client")
-                                return data
+                                output.append(data)
+                                #return data
             except Exception as exp:
                 logger.error("In response, Got {}".format(exp))
+        if len(output) != 0:
+            logging.debug("recevive {}, sequence number".format(len(output)))
+            sqn_lst = []
+            for out in output:
+                sqn_lst.append(out.get("sqn_no"))
+            logging.info("Max sequence is {}".format(max(sqn_lst)))
+            try:
+                data = output[sqn_lst.index(max(sqn_lst))]
+                return data
+            except Exception as exp:
+                logging.error("Error in setting sqn")
         message = {"nodeID":  self.id, "oper": "response", "message": {"success": 0, "data": "Failed to perform request"}}
         return message
             

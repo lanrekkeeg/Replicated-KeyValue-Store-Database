@@ -58,7 +58,7 @@ def recv_ping(id,port, broad_caster, groupView, leaderID, Leader, participation,
         #logger.info("Ping message is {}".format(data))
 
         diff = diff.total_seconds()
-        if diff > 2: # to call off for election
+        if diff > 3: # to call off for election
         
             # check if election is already started?
             # broadcast message for election
