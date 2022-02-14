@@ -83,7 +83,7 @@ class Startup_Routine(object):
             logger.error("Failed to load hld_que dump..")
             return 
         sqn_record = hld_que.pop(-1)
-        self.sqn_no.value = int(sqn_record['sqn_no'])
+        self.sqn_no.value = int(sqn_record['sqn_no'])  # always one ahead
         self.hold_back_queue = hld_que
         logger.info("From hold back queue dump sqn no:{} is loaded".format(self.sqn_no.value))
         

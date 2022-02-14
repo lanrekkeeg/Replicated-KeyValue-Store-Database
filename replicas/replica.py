@@ -157,7 +157,7 @@ class Replica(multiprocessing.Process):
         elif db_operation == "searchbyQuery":
             pass
         elif db_operation == "updatebyID":
-            resp = update_by_id(db_buckets[db_bucket],db_content)
+            resp = update_by_id(db_buckets[db_bucket],db_content['data'])
         elif db_operation == "updatebyQuery":
             pass
         elif db_operation == "createBucket":

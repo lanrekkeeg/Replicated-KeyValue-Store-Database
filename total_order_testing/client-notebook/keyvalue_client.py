@@ -115,9 +115,17 @@ class KeyStore(object):
         return data
         pass
     
-    def updatebyID(self, bucket_name, data, id):
+    def updatebyID(self, bucket_name, data):
         """
         """
+        #self.check_param(bucket_name, id)
+        message = {"multicast":True,"nodeID":self.client_id,"oper": "key-value", "message":{"oper-type": "updatebyID", "bucket_name":bucket_name,"content":{"data":data}}}
+        self.send_data(message)
+        data = self.recv_data()
+        if data:
+            data = self.decode_data(data)
+            return data
+        return data
         pass
         
     def send_ping_to_cordinator(self, broad_cast_sender):

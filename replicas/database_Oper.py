@@ -73,6 +73,7 @@ def update_by_id(db_obj,query):
     update record base on ID
     """
     ids = get_all_IDS(db_obj)
+    
     if query["id"] in ids:
         try:
             record = db_obj.update(query['query'],doc_ids=[query["id"]])
